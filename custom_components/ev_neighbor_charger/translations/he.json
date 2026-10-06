@@ -31,28 +31,63 @@
   "options": {
     "step": {
       "init": {
-        "title": "הגדרות טעינת רכב",
+        "title": "EV Neighbor Charger",
+        "menu_options": {
+          "charger": "טעינה והרשאות",
+          "mail": "שליחת דוא״ל"
+        }
+      },
+      "charger": {
+        "title": "טעינה והרשאות",
         "data": {
           "rate": "מחיר לקוט״ש (₪)",
           "allowed_users": "משתמשים מורשים להתחיל טעינה",
           "idle_watts": "סף הספק נמוך (W)",
           "idle_seconds": "השהיה לכיבוי (שניות)",
-          "restrict_users": "הגבלת משתמשים נבחרים לשליטה ישירה בישויות",
+          "restrict_users": "הגבלת משתמשים נבחרים לשליטה ישירה בישויות"
+        },
+        "data_description": {
+          "restrict_users": "משתמשים נבחרים יוכלו לקרוא מצבים אך לא לשלוט ישירות בישויות."
+        }
+      },
+      "mail": {
+        "title": "שליחת דוא״ל",
+        "description": "בחרו שירות. השרת והפורט יוגדרו אוטומטית.",
+        "data": {
+          "smtp_provider": "שירות דוא״ל"
+        }
+      },
+      "mail_account": {
+        "title": "חשבון דוא״ל",
+        "description": "עבור Gmail, Yahoo ו-iCloud יש להזין כתובת מלאה וסיסמה ייעודית לאפליקציה מהגדרות האבטחה של החשבון. סיסמה רגילה עשויה לא לעבוד. בעריכת אותו חשבון אפשר להשאיר את הסיסמה ריקה כדי לשמור את הקיימת.",
+        "data": {
           "smtp_enabled": "הפעלת הודעות ודוחות חודשיים בדוא״ל",
           "smtp_host": "שרת SMTP",
           "smtp_port": "פורט SMTP",
           "smtp_security": "הצפנת SMTP",
           "smtp_sender": "כתובת השולח",
-          "smtp_username": "שם משתמש SMTP",
-          "smtp_password": "סיסמת SMTP"
-        },
-        "data_description": {
-          "restrict_users": "משתמשים נבחרים יוכלו לקרוא מצבים אך לא לשלוט ישירות בישויות."
+          "smtp_username": "דוא״ל / שם משתמש",
+          "smtp_password": "סיסמה ייעודית לאפליקציה"
         }
       }
     },
     "error": {
-      "smtp_config": "יש להזין שרת SMTP וכתובת שולח תקינה."
+      "smtp_config": "יש להזין שרת SMTP וכתובת שולח תקינה.",
+      "microsoft_oauth": "Microsoft Outlook דורש כניסה באמצעות OAuth. כניסה בשם משתמש וסיסמה אינה נתמכת כאן. יש לבחור שירות אחר.",
+      "invalid_email": "יש להזין כתובת דוא״ל תקינה.",
+      "password_required": "יש להזין סיסמה ייעודית לשירות או לחשבון החדש."
+    }
+  },
+  "selector": {
+    "mail_provider": {
+      "options": {
+        "disabled": "ללא שליחת דוא״ל",
+        "gmail": "Google / Gmail",
+        "yahoo": "Yahoo Mail",
+        "icloud": "Apple iCloud",
+        "microsoft": "Microsoft Outlook / Microsoft 365 (OAuth)",
+        "custom": "שרת SMTP אחר"
+      }
     }
   }
 }
