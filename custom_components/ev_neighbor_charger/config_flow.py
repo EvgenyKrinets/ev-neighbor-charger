@@ -5,6 +5,8 @@ from homeassistant import config_entries
 from homeassistant.core import callback
 from homeassistant.helpers import selector
 
+from .reporting import valid_email
+
 from .const import (
     CONF_ENERGY, CONF_IDLE_SECONDS, CONF_IDLE_W, CONF_POWER, CONF_RATE,
     CONF_SWITCH, CONF_USERS, CONF_READ_ONLY_USERS, DEFAULT_IDLE_SECONDS, DEFAULT_IDLE_W, DEFAULT_RATE,
@@ -69,8 +71,12 @@ class EVNeighborChargerConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
 class EVNeighborChargerOptionsFlow(config_entries.OptionsFlow):
     async def async_step_init(self, user_input=None):
+        errors = {}
         if user_input is not None:
-            return self.async_create_entry(title="", data=user_input)
+            if user_input.get("smtp_enabled") and (not user_input.get("smtp_host", "").strip() or not valid_email(user_input.get("smtp_sender", ""))):
+                errors["base"] = "smtp_config"
+            else:
+                return self.async_create_entry(title="", data=user_input)
         data = {**self.config_entry.data, **self.config_entry.options}
         users_selector = await _allowed_users_selector(self.hass)
         schema = vol.Schema({
@@ -79,5 +85,12 @@ class EVNeighborChargerOptionsFlow(config_entries.OptionsFlow):
             vol.Required(CONF_READ_ONLY_USERS, default=data.get(CONF_READ_ONLY_USERS, True)): selector.BooleanSelector(),
             vol.Required(CONF_IDLE_W, default=data.get(CONF_IDLE_W, DEFAULT_IDLE_W)): selector.NumberSelector(selector.NumberSelectorConfig(min=0, max=2000, step=10, mode=selector.NumberSelectorMode.BOX)),
             vol.Required(CONF_IDLE_SECONDS, default=data.get(CONF_IDLE_SECONDS, DEFAULT_IDLE_SECONDS)): selector.NumberSelector(selector.NumberSelectorConfig(min=30, max=1800, step=10, mode=selector.NumberSelectorMode.BOX)),
+            vol.Required("smtp_enabled", default=data.get("smtp_enabled", False)): selector.BooleanSelector(),
+            vol.Optional("smtp_host", default=data.get("smtp_host", "")): selector.TextSelector(),
+            vol.Required("smtp_port", default=data.get("smtp_port", 587)): selector.NumberSelector(selector.NumberSelectorConfig(min=1, max=65535, mode=selector.NumberSelectorMode.BOX)),
+            vol.Required("smtp_security", default=data.get("smtp_security", "starttls")): selector.SelectSelector(selector.SelectSelectorConfig(options=["starttls", "ssl"])),
+            vol.Optional("smtp_sender", default=data.get("smtp_sender", "")): selector.TextSelector(),
+            vol.Optional("smtp_username", default=data.get("smtp_username", "")): selector.TextSelector(),
+            vol.Optional("smtp_password", default=data.get("smtp_password", "")): selector.TextSelector(selector.TextSelectorConfig(type=selector.TextSelectorType.PASSWORD)),
         })
-        return self.async_show_form(step_id="init", data_schema=schema)
+        return self.async_show_form(step_id="init", data_schema=schema, errors=errors)
