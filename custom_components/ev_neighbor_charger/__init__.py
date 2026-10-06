@@ -69,7 +69,8 @@ async def async_setup_entry(hass: HomeAssistant, entry):
         "managed_users": managed_users,
     })
     data = {"entry": entry, "store": store, "sessions": stored.get("sessions", []), "active": stored.get("active"), "timer": None, "closing": False, "managed_users": managed_users}
-    hass.data.setdefault(DOMAIN, {})[entry.entry_id] = data
+    domain_data = hass.data.setdefault(DOMAIN, {})
+    domain_data[entry.entry_id] = data
 
     async def persist():
         await store.async_save({"sessions": data["sessions"][-1000:], "active": data["active"], "managed_users": data["managed_users"]})
@@ -202,7 +203,18 @@ async def async_setup_entry(hass: HomeAssistant, entry):
     websocket_api.async_register_command(hass, ws_start)
 
     js_path = Path(__file__).parent / "panel.js"
-    await hass.http.async_register_static_paths([StaticPathConfig(f"/{DOMAIN}/panel.js", js_path, cache_headers=False)])
+    if not domain_data.get("_panel_static_path_registered"):
+        try:
+            await hass.http.async_register_static_paths(
+                [StaticPathConfig(f"/{DOMAIN}/panel.js", js_path, cache_headers=False)]
+            )
+        except RuntimeError as err:
+            # The HTTP route remains registered after a failed setup/reload.
+            # Home Assistant's HTTP API does not make this call idempotent.
+            if "method GET is already registered" not in str(err):
+                raise
+            _LOGGER.debug("Panel JavaScript route was already registered")
+        domain_data["_panel_static_path_registered"] = True
     if DOMAIN not in hass.data.get("frontend_panels", {}):
         async_register_built_in_panel(
             hass,
