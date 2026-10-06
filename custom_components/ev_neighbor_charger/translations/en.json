@@ -40,6 +40,9 @@
       "charger": {
         "title": "Charging and access",
         "data": {
+          "switch_entity": "Charging switch",
+          "energy_entity": "Cumulative energy sensor",
+          "power_entity": "Current power sensor",
           "rate": "Price per kWh (₪)",
           "allowed_users": "Users allowed to start charging",
           "idle_watts": "Idle power threshold (W)",
