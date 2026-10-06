@@ -52,7 +52,7 @@
       },
       "mail": {
         "title": "Отправка почты",
-        "description": "Выберите сервис. Сервер и порт будут настроены автоматически.",
+        "description": "Выберите сервис. Сервер и порт будут настроены автоматически. Регистрация: [Brevo](https://www.brevo.com/) или [Mailjet](https://www.mailjet.com/). Home Assistant не может создать внешний аккаунт без подтверждения почты.",
         "data": {
           "smtp_provider": "Почтовый сервис"
         }
@@ -86,7 +86,9 @@
         "yahoo": "Yahoo Mail",
         "icloud": "Apple iCloud",
         "microsoft": "Microsoft Outlook / Microsoft 365 (OAuth)",
-        "custom": "Другой SMTP-сервер"
+        "custom": "Другой SMTP-сервер",
+        "brevo": "Brevo (300 писем/день)",
+        "mailjet": "Mailjet (6000 писем/месяц)"
       }
     }
   }
