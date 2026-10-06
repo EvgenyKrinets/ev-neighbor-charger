@@ -6,6 +6,6 @@
   "documentation": "https://github.com/EvgenyKrinets/ev-neighbor-charger#readme",
   "issue_tracker": "https://github.com/EvgenyKrinets/ev-neighbor-charger/issues",
   "iot_class": "local_push",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "requirements": []
 }
