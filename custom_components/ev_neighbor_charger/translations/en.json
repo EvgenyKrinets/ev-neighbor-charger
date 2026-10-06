@@ -37,12 +37,22 @@
           "allowed_users": "Users allowed to start charging",
           "idle_watts": "Idle power threshold (W)",
           "idle_seconds": "Shutoff delay (seconds)",
-          "restrict_users": "Restrict selected users from controlling entities in Home Assistant"
+          "restrict_users": "Restrict selected users from controlling entities in Home Assistant",
+          "smtp_enabled": "Enable email notifications and monthly reports",
+          "smtp_host": "SMTP server",
+          "smtp_port": "SMTP port",
+          "smtp_security": "SMTP encryption",
+          "smtp_sender": "Sender email",
+          "smtp_username": "SMTP username",
+          "smtp_password": "SMTP password"
         },
         "data_description": {
           "restrict_users": "Selected non-admin accounts are switched to Home Assistant Read Only. They cannot control entities directly, but can still read entity states."
         }
       }
+    },
+    "error": {
+      "smtp_config": "Enter an SMTP server and a valid sender email."
     }
   }
 }
