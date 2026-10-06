@@ -88,6 +88,14 @@ class EVNeighborChargerPanel extends HTMLElement {
   try{await this._hass.connection.sendMessagePromise({type:'ev_neighbor_charger/profile',email:this.querySelector('#email').value,language:this._language()});this._draft=null;await this._refresh();this._error=EV_TEXT[this._language()][16];this._showMessage();}
   catch(e){this._error=e.message;this._showMessage();}
  }
+ async _testEmail(){
+  this._error='';
+  try{
+   await this._hass.connection.sendMessagePromise({type:'ev_neighbor_charger/test_email'});
+   this._notice=this._language()==='he'?'הודעת בדיקה נשלחה':this._language()==='ru'?'Тестовое письмо отправлено':'Test email sent';
+  }catch(e){this._error=e.message||'Email test failed';}
+  this._render();this._showMessage();
+ }
  _showMessage(){const node=this.querySelector('#message');if(node)node.textContent=this._error||'';}
  _renderStats(){
   const node=this.querySelector('#live');if(!node||!this._data)return;
@@ -112,12 +120,12 @@ class EVNeighborChargerPanel extends HTMLElement {
   </style><main class="evwrap" dir="${lang==='he'?'rtl':'ltr'}"><div class="evtop"><h1><img class="brand-icon" src="/ev_neighbor_charger/icon.png" alt=""> ${t[0]} <small class="version">v${esc(d.version||'…')}</small></h1><select id="language" aria-label="${t[22]}">${[['ru','Русский'],['en','English'],['he','עברית']].map(([k,v])=>`<option value="${k}" ${k===lang?'selected':''}>${v}</option>`).join('')}</select></div><div id="message" role="status">${esc(this._error||'')}</div>
   <section class="card charge-card"><h2 class="status">${!this._data?t[19]:a||this._starting?t[2]:d.busy?t[3]:t[1]}</h2>${d.busy&&(d.owner||a?.name)?`<div class="charging-owner"><div class="owner-label">${t[11]}</div><bdi class="owner-name">${esc(d.owner||a?.name)}</bdi></div>`:''}${a?`<p class="session-start">${t[9]} · ${esc(date(a.start))}</p>`:''}<div id="live" class="stats"></div><div class="session-footer"><span class="rate">₪${Number(a?.rate??d.rate??0).toFixed(2)} / kWh</span>${!d.busy&&!this._starting?`<button id="start" ${!d.can_start?'disabled':''}>${t[4]} <span aria-hidden="true">↗</span></button>`:''}</div></section>
 
-  ${d.can_start?`<section class="card"><h2 class="section-title">${t[13]}</h2><div class="form"><label>${t[14]}<br><input id="email" type="email" dir="ltr" autocomplete="email" value="${esc(this._draft??d.profile?.email??d.suggested_email??'')}"></label><button id="save">${t[15]}</button></div><p class="mail-note">${t[22]}: ${lang==='he'?'עברית':lang==='ru'?'Русский':'English'}</p>${!d.email_enabled?`<p>${t[17]}</p>`:''}${d.mail_error?`<p>${t[27]}</p>`:''}</section>`:''}
+  ${d.can_start?`<section class="card"><h2 class="section-title">${t[13]}</h2><div class="form"><label>${t[14]}<br><input id="email" type="email" dir="ltr" autocomplete="email" value="${esc(this._draft??d.profile?.email??d.suggested_email??'')}"></label><button id="save">${t[15]}</button><button id="test-email" ${!d.email_enabled || !d.profile?.email ? 'disabled' : ''}>${lang==='he'?'בדיקת שליחה':lang==='ru'?'Тест отправки':'Test email'}</button></div><p class="mail-note">${t[22]}: ${lang==='he'?'עברית':lang==='ru'?'Русский':'English'}</p>${!d.email_enabled?`<p>${t[17]}</p>`:''}${d.mail_error?`<p>${t[27]}</p>`:''}</section>`:''}
   <section class="card"><h2 class="section-title">${t[12]}</h2><div class="stats summary-stats"><div><small>${t[5]}</small><strong>${Number(d.totals?.kwh||0).toFixed(3)} kWh</strong></div><div><small>${t[6]}</small><strong>₪${Number(d.totals?.cost||0).toFixed(2)}</strong></div></div></section>
   <section class="card"><h2 class="section-title">${t[8]}</h2><div class="scroll"><table><thead><tr><th>${t[9]}</th><th>${t[10]}</th>${d.is_admin?`<th>${t[11]}</th>`:''}<th>${t[26]}</th><th>kWh</th><th>₪</th></tr></thead><tbody>${rows||`<tr><td colspan="6">${t[18]}</td></tr>`}</tbody></table></div></section></main>`;
   this.querySelector('#language').onchange=e=>{this._lang=e.target.value;this._render();};
   const start=this.querySelector('#start');if(start)start.onclick=()=>this._start();
-  const save=this.querySelector('#save');if(save)save.onclick=()=>this._save();this._renderStats();
+  const save=this.querySelector('#save');if(save)save.onclick=()=>this._save();const test=this.querySelector('#test-email');if(test)test.onclick=()=>this._testEmail();this._renderStats();
  }
  _esc(value){return String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 }
