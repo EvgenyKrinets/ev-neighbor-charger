@@ -103,7 +103,7 @@ class EVNeighborChargerOptionsFlow(config_entries.OptionsFlow):
             else:
                 return await self.async_step_mail_account()
         default = data.get("smtp_provider", "custom") if data.get("smtp_enabled") else "disabled"
-        schema = vol.Schema({vol.Required("smtp_provider", default=default): selector.SelectSelector(selector.SelectSelectorConfig(options=["disabled", "gmail", "yahoo", "icloud", "microsoft", "custom"], translation_key="mail_provider", mode=selector.SelectSelectorMode.DROPDOWN))})
+        schema = vol.Schema({vol.Required("smtp_provider", default=default): selector.SelectSelector(selector.SelectSelectorConfig(options=["disabled", "gmail", "yahoo", "icloud", "brevo", "mailjet", "microsoft", "custom"], translation_key="mail_provider", mode=selector.SelectSelectorMode.DROPDOWN))})
         return self.async_show_form(step_id="mail", data_schema=schema, errors=errors)
 
     async def async_step_mail_account(self, user_input=None):
