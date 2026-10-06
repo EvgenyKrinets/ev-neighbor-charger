@@ -11,7 +11,7 @@ mail=importlib.util.module_from_spec(spec);spec.loader.exec_module(mail)
 
 class MailConfigTests(unittest.TestCase):
     def test_presets_set_sender_host_and_tls(self):
-        for provider,expected in [('gmail',('smtp.gmail.com',587,'starttls')),('yahoo',('smtp.mail.yahoo.com',465,'ssl')),('icloud',('smtp.mail.me.com',587,'starttls'))]:
+        for provider,expected in [('gmail',('smtp.gmail.com',587,'starttls')),('yahoo',('smtp.mail.yahoo.com',465,'ssl')),('icloud',('smtp.mail.me.com',587,'starttls')),('brevo',('smtp-relay.brevo.com',587,'starttls')),('mailjet',('in-v3.mailjet.com',587,'starttls'))]:
             result=mail.mail_settings(provider,{'smtp_username':'owner@example.com','smtp_password':'app-secret'}, {})
             self.assertEqual((result['smtp_host'],result['smtp_port'],result['smtp_security']),expected)
             self.assertEqual(result['smtp_sender'],'owner@example.com')
