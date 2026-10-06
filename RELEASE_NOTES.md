@@ -1,9 +1,10 @@
-## EV Neighbor Charger 0.3.3
+## EV Neighbor Charger 0.4.0
 
-- Push live power, energy and session data directly from the integration over WebSocket when sensors change.
-- Prevent stale frontend entity data and delayed polling replies from overwriting newer readings.
-- Recover after mobile app resume, network changes and integration reloads; time out stalled requests so polling cannot remain blocked indefinitely.
-- Keep the charging user's name and existing email form values.
-- Unavailable energy readings now display a dash instead of a misleading zero.
+- New charging panel with a prominent charging user, larger live metrics, teal accents, mobile layout and Hebrew RTL support.
+- Start button disappears while starting or while the charger is occupied.
+- Options now separate charging/access from outgoing email.
+- Google/Gmail, Yahoo and Apple iCloud presets automatically fill SMTP host, port, encryption and sender. Enter your email and app password only.
+- Existing custom SMTP settings are preserved. Blank password keeps an existing password only for the same provider and username.
+- Microsoft is clearly marked as requiring OAuth; password-only Microsoft setup is not supported and cannot be saved as a working connection.
 
-Install through HACS, restart Home Assistant and reopen the panel. Values update when the configured sensors report; this cannot increase the device's own reporting rate.
+Update through HACS, restart Home Assistant and reopen the charging panel. For email: integration options → Outgoing email → choose provider. Use an app password issued by your provider, not a regular account password.
