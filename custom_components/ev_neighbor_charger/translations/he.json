@@ -1,0 +1,58 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "EV Neighbor Charger",
+        "description": "בחרו מתג, חיישנים, מחיר, משתמשים והגדרות כיבוי אוטומטי.",
+        "data": {
+          "switch_entity": "מתג טעינה",
+          "energy_entity": "חיישן אנרגיה מצטברת",
+          "power_entity": "חיישן הספק נוכחי",
+          "rate": "מחיר לקוט״ש (₪)",
+          "allowed_users": "משתמשים מורשים להתחיל טעינה",
+          "idle_watts": "סף הספק נמוך (W)",
+          "idle_seconds": "השהיה לכיבוי (שניות)",
+          "restrict_users": "הגבלת משתמשים נבחרים לשליטה ישירה בישויות"
+        },
+        "data_description": {
+          "restrict_users": "חשבונות נבחרים שאינם מנהלים מועברים להרשאת קריאה בלבד. צפייה בישויות אחרות עדיין אפשרית. ההרשאות הקודמות משוחזרות בעת הסרה."
+        }
+      }
+    },
+    "error": {
+      "entity_not_found": "הישות אינה זמינה.",
+      "energy_unit": "יחידות האנרגיה חייבות להיות kWh או Wh.",
+      "power_unit": "יחידות ההספק חייבות להיות W או kW."
+    },
+    "abort": {
+      "single_instance_allowed": "ניתן להגדיר מטען אחד בלבד."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "הגדרות טעינת רכב",
+        "data": {
+          "rate": "מחיר לקוט״ש (₪)",
+          "allowed_users": "משתמשים מורשים להתחיל טעינה",
+          "idle_watts": "סף הספק נמוך (W)",
+          "idle_seconds": "השהיה לכיבוי (שניות)",
+          "restrict_users": "הגבלת משתמשים נבחרים לשליטה ישירה בישויות",
+          "smtp_enabled": "הפעלת הודעות ודוחות חודשיים בדוא״ל",
+          "smtp_host": "שרת SMTP",
+          "smtp_port": "פורט SMTP",
+          "smtp_security": "הצפנת SMTP",
+          "smtp_sender": "כתובת השולח",
+          "smtp_username": "שם משתמש SMTP",
+          "smtp_password": "סיסמת SMTP"
+        },
+        "data_description": {
+          "restrict_users": "משתמשים נבחרים יוכלו לקרוא מצבים אך לא לשלוט ישירות בישויות."
+        }
+      }
+    },
+    "error": {
+      "smtp_config": "יש להזין שרת SMTP וכתובת שולח תקינה."
+    }
+  }
+}
