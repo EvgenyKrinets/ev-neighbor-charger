@@ -1,10 +1,14 @@
 """Known SMTP providers and safe credential preservation."""
 from .reporting import valid_email
 
+SIGNUP_URLS = {"brevo": "https://www.brevo.com/", "mailjet": "https://www.mailjet.com/"}
+
 PRESETS = {
     "gmail": ("smtp.gmail.com", 587, "starttls"),
     "yahoo": ("smtp.mail.yahoo.com", 465, "ssl"),
     "icloud": ("smtp.mail.me.com", 587, "starttls"),
+    "brevo": ("smtp-relay.brevo.com", 587, "starttls"),
+    "mailjet": ("in-v3.mailjet.com", 587, "starttls"),
 }
 
 
