@@ -15,6 +15,7 @@ from homeassistant.components.frontend import async_register_built_in_panel
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.event import async_track_state_change_event, async_call_later, async_track_time_interval
 from homeassistant.helpers.storage import Store
+from homeassistant.helpers.dispatcher import async_dispatcher_connect, async_dispatcher_send
 from homeassistant.components.http import StaticPathConfig
 from homeassistant.auth.const import GROUP_ID_READ_ONLY
 from homeassistant.core import Context
@@ -78,6 +79,7 @@ async def async_setup_entry(hass: HomeAssistant, entry):
 
     async def persist():
         await store.async_save({key: data[key] for key in ("sessions", "active", "managed_users", "profiles", "outbox", "monthly")})
+        async_dispatcher_send(hass, f"{DOMAIN}_updated")
 
     async def deliver():
         if not settings.get("smtp_enabled") or data["stopped"]:
@@ -192,10 +194,8 @@ async def async_setup_entry(hass: HomeAssistant, entry):
         if power is not None and power <= float(settings.get(CONF_IDLE_W, 100)):
             data["timer"] = async_call_later(hass, int(settings.get(CONF_IDLE_SECONDS, 120)), low_power_callback)
 
-    @websocket_api.websocket_command({"type": f"{DOMAIN}/get"})
-    @websocket_api.async_response
-    async def ws_get(hass, connection, msg):
-        user = connection.user
+    @callback
+    def snapshot(user):
         is_admin = bool(user and user.is_admin)
         sessions = data["sessions"]
         if is_admin:
@@ -212,7 +212,42 @@ async def async_setup_entry(hass: HomeAssistant, entry):
         totals = {"kwh": round(sum(s.get("energy_kwh", 0) for s in visible), 3), "cost": round(sum(s.get("cost", 0) for s in visible), 2)}
         allowed = settings.get(CONF_USERS, [])
         can_start = is_admin or bool(user and user.id in allowed)
-        connection.send_result(msg["id"], {"active": active, "sessions": list(reversed(visible[-100:])), "totals": totals, "power_w": current_power, "energy_kwh": current_energy, "busy": bool(data["active"]), "owner": data["active"].get("name") if data["active"] else None, "is_admin": is_admin, "can_start": can_start, "rate": float(settings.get(CONF_RATE, 0)), "version": VERSION, "suggested_email": suggested_email(user), "profile": data["profiles"].get(user.id, {}) if user else {}, "entities": {"power": settings[CONF_POWER], "energy": settings[CONF_ENERGY]}, "email_enabled": bool(settings.get("smtp_enabled")), "mail_error": data["mail_error"] if is_admin else None})
+        return {"active": active, "sessions": list(reversed(visible[-100:])), "totals": totals, "power_w": current_power, "power_updated": power_state.last_updated.isoformat() if power_state else None, "energy_updated": energy_state.last_updated.isoformat() if energy_state else None, "energy_kwh": current_energy, "busy": bool(data["active"]), "owner": data["active"].get("name") if data["active"] else None, "is_admin": is_admin, "can_start": can_start, "rate": float(settings.get(CONF_RATE, 0)), "version": VERSION, "suggested_email": suggested_email(user), "profile": data["profiles"].get(user.id, {}) if user else {}, "entities": {"power": settings[CONF_POWER], "energy": settings[CONF_ENERGY]}, "email_enabled": bool(settings.get("smtp_enabled")), "mail_error": data["mail_error"] if is_admin else None}
+
+    @websocket_api.websocket_command({"type": f"{DOMAIN}/get"})
+    @websocket_api.async_response
+    async def ws_get(hass, connection, msg):
+        connection.send_result(msg["id"], snapshot(connection.user))
+
+    @websocket_api.websocket_command({"type": f"{DOMAIN}/subscribe"})
+    @callback
+    def ws_subscribe(hass, connection, msg):
+        @callback
+        def send_update(*_args):
+            connection.send_event(msg["id"], snapshot(connection.user))
+
+        unsubs = [
+            async_track_state_change_event(hass, [settings[CONF_POWER], settings[CONF_ENERGY], settings[CONF_SWITCH]], send_update),
+            async_dispatcher_connect(hass, f"{DOMAIN}_updated", send_update),
+        ]
+        @callback
+        def unsubscribe():
+            for unsub in unsubs:
+                unsub()
+            unsubs.clear()
+            data["live_subscriptions"].discard(unsubscribe)
+
+        @callback
+        def reloading():
+            connection.send_event(msg["id"], {"reload": True})
+            unsubscribe()
+
+        data.setdefault("live_subscriptions", set()).add(unsubscribe)
+        unsubs.append(async_dispatcher_connect(hass, f"{DOMAIN}_unloading", reloading))
+        connection.subscriptions[msg["id"]] = unsubscribe
+        connection.send_result(msg["id"])
+        send_update()
+
 
     @websocket_api.websocket_command({"type": f"{DOMAIN}/start"})
     @websocket_api.async_response
@@ -276,6 +311,7 @@ async def async_setup_entry(hass: HomeAssistant, entry):
     data["unsubs"].append(async_track_time_interval(hass, monthly_tick, timedelta(minutes=5)))
     hass.async_create_task(monthly_tick())
 
+    websocket_api.async_register_command(hass, ws_subscribe)
     websocket_api.async_register_command(hass, ws_get)
     websocket_api.async_register_command(hass, ws_start)
 
@@ -328,6 +364,7 @@ async def async_unload_entry(hass: HomeAssistant, entry):
     data = hass.data[DOMAIN].pop(entry.entry_id, None)
     if data:
         data["stopped"] = True
+        async_dispatcher_send(hass, f"{DOMAIN}_unloading")
         for unsub in data.get("unsubs", []):
             unsub()
         if data.get("timer"):
