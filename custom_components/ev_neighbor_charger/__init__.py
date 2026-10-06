@@ -307,6 +307,42 @@ async def async_setup_entry(hass: HomeAssistant, entry):
         connection.send_result(msg["id"], {"saved": True})
         hass.async_create_task(monthly_tick())
 
+    @websocket_api.websocket_command({"type": f"{DOMAIN}/test_email"})
+    @websocket_api.async_response
+    async def ws_test_email(hass, connection, msg):
+        user = connection.user
+        profile = data["profiles"].get(user.id, {}) if user else {}
+        recipient = profile.get("email")
+        if not recipient:
+            connection.send_error(msg["id"], "invalid_email", "Save your email first")
+            return
+        if not settings.get("smtp_enabled"):
+            connection.send_error(msg["id"], websocket_api.ERR_HOME_ASSISTANT_ERROR, "Email sending is disabled")
+            return
+        job = {
+            "kind": "start",
+            "email": recipient,
+            "language": profile.get("language", "en"),
+            "name": user.name if user else "",
+            "records": [{
+                "user_id": user.id if user else "",
+                "name": user.name if user else "",
+                "start": dt_util.now().isoformat(),
+                "end": None,
+                "energy_kwh": 0,
+                "cost": 0,
+                "rate": float(settings.get(CONF_RATE, 0)),
+                "reason": "completed",
+            }],
+        }
+        try:
+            await hass.async_add_executor_job(send_mail, settings, job, dt_util.get_time_zone(hass.config.time_zone))
+        except Exception as err:
+            _LOGGER.exception("Test email failed")
+            connection.send_error(msg["id"], websocket_api.ERR_HOME_ASSISTANT_ERROR, str(err))
+            return
+        connection.send_result(msg["id"], {"sent": True, "email": recipient})
+
     websocket_api.async_register_command(hass, ws_profile)
     data["unsubs"].append(async_track_time_interval(hass, monthly_tick, timedelta(minutes=5)))
     hass.async_create_task(monthly_tick())
@@ -314,6 +350,7 @@ async def async_setup_entry(hass: HomeAssistant, entry):
     websocket_api.async_register_command(hass, ws_subscribe)
     websocket_api.async_register_command(hass, ws_get)
     websocket_api.async_register_command(hass, ws_start)
+    websocket_api.async_register_command(hass, ws_test_email)
 
     js_path = Path(__file__).parent / "panel.js"
     if not domain_data.get("_panel_static_path_registered"):
