@@ -52,7 +52,7 @@
       },
       "mail": {
         "title": "שליחת דוא״ל",
-        "description": "בחרו שירות. השרת והפורט יוגדרו אוטומטית.",
+        "description": "בחרו שירות. השרת והפורט יוגדרו אוטומטית. הרשמה: [Brevo](https://www.brevo.com/) או [Mailjet](https://www.mailjet.com/). Home Assistant אינו יכול ליצור חשבון חיצוני ללא אימות דוא״ל.",
         "data": {
           "smtp_provider": "שירות דוא״ל"
         }
@@ -86,7 +86,9 @@
         "yahoo": "Yahoo Mail",
         "icloud": "Apple iCloud",
         "microsoft": "Microsoft Outlook / Microsoft 365 (OAuth)",
-        "custom": "שרת SMTP אחר"
+        "custom": "שרת SMTP אחר",
+        "brevo": "Brevo (300 הודעות ביום)",
+        "mailjet": "Mailjet (6000 הודעות בחודש)"
       }
     }
   }
