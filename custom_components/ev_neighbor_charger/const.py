@@ -1,0 +1,17 @@
+DOMAIN = "ev_neighbor_charger"
+PLATFORMS = []
+CONF_SWITCH = "switch_entity"
+CONF_ENERGY = "energy_entity"
+CONF_POWER = "power_entity"
+CONF_RATE = "rate"
+CONF_USERS = "allowed_users"
+CONF_READ_ONLY_USERS = "restrict_users"
+CONF_IDLE_W = "idle_watts"
+CONF_IDLE_SECONDS = "idle_seconds"
+DEFAULT_RATE = 0.65
+DEFAULT_IDLE_W = 100
+DEFAULT_IDLE_SECONDS = 120
+STORAGE_VERSION = 1
+STORAGE_KEY = f"{DOMAIN}_sessions"
+PANEL_PATH = "ev-neighbor-charger"
+PANEL_ELEMENT = "ev-neighbor-charger-panel"
