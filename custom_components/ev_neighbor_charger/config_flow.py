@@ -16,7 +16,7 @@ from .const import (
 async def _allowed_users_selector(hass):
     users = await hass.auth.async_get_users()
     options = [
-        {"label": user.name or user.username, "value": user.id}
+        {"label": user.name or user.id, "value": user.id}
         for user in users
         if user.is_active and not user.system_generated and not user.is_admin
     ]
