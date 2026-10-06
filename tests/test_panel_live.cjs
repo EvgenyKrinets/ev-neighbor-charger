@@ -14,14 +14,14 @@ function setup(){
 const reading=(power=1234)=>({power_w:power,energy_kwh:12,active:{start:'now',start_kwh:10,rate:.65,name:'Neighbor'},owner:'Neighbor',busy:true,entities:{energy:'sensor.energy',power:'sensor.power'}});
 test('server readings override stale frontend cache, and null energy is not zero',()=>{
  const {p,nodes}=setup();p._hass.states={'sensor.power':{state:'0',attributes:{}},'sensor.energy':{state:'10',attributes:{}}};
- p._accept(reading());assert.match(nodes['#live'].innerHTML,/1234 W/);assert.match(nodes['#live'].innerHTML,/2.000 kWh/);
- p._accept({...reading(),energy_kwh:null});assert.match(nodes['#live'].innerHTML,/— kWh/);
+ p._accept(reading());assert.match(nodes['#live'].innerHTML.replace(/<[^>]*>/g,''),/1234 W/);assert.match(nodes['#live'].innerHTML.replace(/<[^>]*>/g,''),/2.000 kWh/);
+ p._accept({...reading(),energy_kwh:null});assert.match(nodes['#live'].innerHTML.replace(/<[^>]*>/g,''),/— kWh/);
 });
 test('late poll cannot roll back a pushed reading',async()=>{
  const {p,nodes}=setup();let resolve;
  p._hass.connection.sendMessagePromise=()=>new Promise(r=>resolve=r);
  const pending=p._refresh();p._pushRevision=1;p._accept(reading(9000));resolve(reading(10));await pending;
- assert.match(nodes['#live'].innerHTML,/9000 W/);
+ assert.match(nodes['#live'].innerHTML.replace(/<[^>]*>/g,''),/9000 W/);
 });
 test('a stalled request times out and allows another poll',async()=>{
  const {p,timeouts}=setup();p._hass.connection.sendMessagePromise=()=>new Promise(()=>{});
@@ -37,4 +37,11 @@ test('push subscription updates immediately and unsubscribes on close',async()=>
  await p._subscribe();push(reading(3300));assert.equal(p._data.power_w,3300);
  p.isConnected=false;p.disconnectedCallback();await Promise.resolve();assert.equal(removed,1);
  push(reading(1));assert.equal(p._data.power_w,3300);
+});
+
+test('start button is hidden during charging and owner is prominent',()=>{
+ const {p}=setup();delete p._render;p.querySelector=()=>({});p._data=reading();p._render();
+ assert.doesNotMatch(p.innerHTML,/id="start"/);assert.match(p.innerHTML,/class="owner-name">Neighbor/);
+ p._data={...reading(),busy:false,active:null,can_start:true};p._render();assert.match(p.innerHTML,/id="start"/);
+ p._starting=true;p._render();assert.doesNotMatch(p.innerHTML,/id="start"/);
 });
