@@ -6,6 +6,7 @@ import math
 import voluptuous as vol
 from homeassistant.util import dt as dt_util
 from .reporting import valid_email, send_mail
+from .profile import suggested_email
 import logging
 from pathlib import Path
 
@@ -21,7 +22,7 @@ from homeassistant.core import Context
 from .const import (
     CONF_ENERGY, CONF_IDLE_SECONDS, CONF_IDLE_W, CONF_POWER, CONF_RATE,
     CONF_SWITCH, CONF_USERS, CONF_READ_ONLY_USERS, DOMAIN, PANEL_ELEMENT, PANEL_PATH, STORAGE_KEY,
-    STORAGE_VERSION,
+    STORAGE_VERSION, VERSION,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -211,7 +212,7 @@ async def async_setup_entry(hass: HomeAssistant, entry):
         totals = {"kwh": round(sum(s.get("energy_kwh", 0) for s in visible), 3), "cost": round(sum(s.get("cost", 0) for s in visible), 2)}
         allowed = settings.get(CONF_USERS, [])
         can_start = is_admin or bool(user and user.id in allowed)
-        connection.send_result(msg["id"], {"active": active, "sessions": list(reversed(visible[-100:])), "totals": totals, "power_w": current_power, "energy_kwh": current_energy, "busy": bool(data["active"]), "owner": data["active"].get("name") if data["active"] else None, "is_admin": is_admin, "can_start": can_start, "rate": float(settings.get(CONF_RATE, 0)), "profile": data["profiles"].get(user.id, {}) if user else {}, "entities": {"power": settings[CONF_POWER], "energy": settings[CONF_ENERGY]}, "email_enabled": bool(settings.get("smtp_enabled")), "mail_error": data["mail_error"] if is_admin else None})
+        connection.send_result(msg["id"], {"active": active, "sessions": list(reversed(visible[-100:])), "totals": totals, "power_w": current_power, "energy_kwh": current_energy, "busy": bool(data["active"]), "owner": data["active"].get("name") if data["active"] else None, "is_admin": is_admin, "can_start": can_start, "rate": float(settings.get(CONF_RATE, 0)), "version": VERSION, "suggested_email": suggested_email(user), "profile": data["profiles"].get(user.id, {}) if user else {}, "entities": {"power": settings[CONF_POWER], "energy": settings[CONF_ENERGY]}, "email_enabled": bool(settings.get("smtp_enabled")), "mail_error": data["mail_error"] if is_admin else None})
 
     @websocket_api.websocket_command({"type": f"{DOMAIN}/start"})
     @websocket_api.async_response
@@ -235,7 +236,7 @@ async def async_setup_entry(hass: HomeAssistant, entry):
             connection.send_error(msg["id"], websocket_api.ERR_HOME_ASSISTANT_ERROR, "Energy sensor has no numeric reading")
             return
         data["starting"] = True
-        data["active"] = {"user_id": uid, "name": user.name or user.username, "start": datetime.now(timezone.utc).isoformat(), "start_kwh": start_kwh, "rate": float(settings.get(CONF_RATE, 0))}
+        data["active"] = {"user_id": uid, "name": user.name or user.id, "start": datetime.now(timezone.utc).isoformat(), "start_kwh": start_kwh, "rate": float(settings.get(CONF_RATE, 0))}
         await persist()
         try:
             await hass.services.async_call("switch", "turn_on", {"entity_id": settings[CONF_SWITCH]}, blocking=True, context=Context())
@@ -291,6 +292,15 @@ async def async_setup_entry(hass: HomeAssistant, entry):
                 raise
             _LOGGER.debug("Panel JavaScript route was already registered")
         domain_data["_panel_static_path_registered"] = True
+    if not domain_data.get("_panel_icon_registered"):
+        try:
+            await hass.http.async_register_static_paths([
+                StaticPathConfig(f"/{DOMAIN}/icon.png", Path(__file__).parent / "brand" / "icon.png", cache_headers=True)
+            ])
+        except RuntimeError as err:
+            if "method GET is already registered" not in str(err):
+                raise
+        domain_data["_panel_icon_registered"] = True
     if PANEL_PATH not in hass.data.get("frontend_panels", {}):
         async_register_built_in_panel(
             hass,
@@ -300,7 +310,7 @@ async def async_setup_entry(hass: HomeAssistant, entry):
             frontend_url_path=PANEL_PATH,
             config={"_panel_custom": {
                 "name": PANEL_ELEMENT,
-                "js_url": f"/{DOMAIN}/panel.js?v=0.3.0",
+                "js_url": f"/{DOMAIN}/panel.js?v={VERSION}",
                 "embed_iframe": False,
                 "trust_external": False,
             }},
