@@ -1,4 +1,4 @@
-VERSION = "0.3.2"
+VERSION = "0.3.3"
 DOMAIN = "ev_neighbor_charger"
 PLATFORMS = []
 CONF_SWITCH = "switch_entity"
