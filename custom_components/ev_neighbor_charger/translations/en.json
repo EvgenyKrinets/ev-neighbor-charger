@@ -1,0 +1,48 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "EV Neighbor Charger",
+        "description": "Select your charging switch, energy and power sensors, price, allowed users and automatic shutoff settings.",
+        "data": {
+          "switch_entity": "Charging switch",
+          "energy_entity": "Cumulative energy sensor",
+          "power_entity": "Current power sensor",
+          "rate": "Price per kWh (₪)",
+          "allowed_users": "Users allowed to start charging",
+          "idle_watts": "Idle power threshold (W)",
+          "idle_seconds": "Shutoff delay (seconds)",
+          "restrict_users": "Restrict selected users from controlling entities in Home Assistant"
+        },
+        "data_description": {
+          "restrict_users": "When enabled, selected non-admin accounts are switched to Home Assistant Read Only. This blocks direct entity control throughout Home Assistant. Previous group memberships are restored if a user is removed here or this integration is removed. Read access to other entities is not restricted."
+        }
+      }
+    },
+    "error": {
+      "entity_not_found": "The selected entity is unavailable.",
+      "energy_unit": "Energy sensor must use kWh or Wh.",
+      "power_unit": "Power sensor must use W or kW."
+    },
+    "abort": {
+      "single_instance_allowed": "Only one charger can be configured."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "EV Neighbor Charger settings",
+        "data": {
+          "rate": "Price per kWh (₪)",
+          "allowed_users": "Users allowed to start charging",
+          "idle_watts": "Idle power threshold (W)",
+          "idle_seconds": "Shutoff delay (seconds)",
+          "restrict_users": "Restrict selected users from controlling entities in Home Assistant"
+        },
+        "data_description": {
+          "restrict_users": "Selected non-admin accounts are switched to Home Assistant Read Only. They cannot control entities directly, but can still read entity states."
+        }
+      }
+    }
+  }
+}
