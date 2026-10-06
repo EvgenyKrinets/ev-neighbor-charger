@@ -52,7 +52,7 @@
       },
       "mail": {
         "title": "Outgoing email",
-        "description": "Choose a service. Server and port are configured automatically.",
+        "description": "Choose a service. Server and port are configured automatically. Sign up: [Brevo](https://www.brevo.com/) or [Mailjet](https://www.mailjet.com/). Home Assistant cannot create an external account without email verification.",
         "data": {
           "smtp_provider": "Email service"
         }
@@ -86,7 +86,9 @@
         "yahoo": "Yahoo Mail",
         "icloud": "Apple iCloud",
         "microsoft": "Microsoft Outlook / Microsoft 365 (OAuth)",
-        "custom": "Other SMTP server"
+        "custom": "Other SMTP server",
+        "brevo": "Brevo (300 emails/day)",
+        "mailjet": "Mailjet (6000 emails/month)"
       }
     }
   }
