@@ -21,6 +21,7 @@ jobs:
           python -m compileall -q custom_components
           python -m unittest discover -s tests
           node --check custom_components/ev_neighbor_charger/panel.js
+          if [ -f tests/test_panel_live.cjs ]; then node --test tests/test_panel_live.cjs; fi
       - name: Publish release matching manifest
         env:
           GH_TOKEN: ${{ github.token }}
