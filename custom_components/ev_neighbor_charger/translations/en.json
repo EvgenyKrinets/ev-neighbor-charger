@@ -31,28 +31,63 @@
   "options": {
     "step": {
       "init": {
-        "title": "EV Neighbor Charger settings",
+        "title": "EV Neighbor Charger",
+        "menu_options": {
+          "charger": "Charging and access",
+          "mail": "Outgoing email"
+        }
+      },
+      "charger": {
+        "title": "Charging and access",
         "data": {
           "rate": "Price per kWh (₪)",
           "allowed_users": "Users allowed to start charging",
           "idle_watts": "Idle power threshold (W)",
           "idle_seconds": "Shutoff delay (seconds)",
-          "restrict_users": "Restrict selected users from controlling entities in Home Assistant",
+          "restrict_users": "Restrict selected users from controlling entities in Home Assistant"
+        },
+        "data_description": {
+          "restrict_users": "Selected non-admin accounts are switched to Home Assistant Read Only. They cannot control entities directly, but can still read entity states."
+        }
+      },
+      "mail": {
+        "title": "Outgoing email",
+        "description": "Choose a service. Server and port are configured automatically.",
+        "data": {
+          "smtp_provider": "Email service"
+        }
+      },
+      "mail_account": {
+        "title": "Email account",
+        "description": "For Gmail, Yahoo and iCloud enter your full email address and an app password created in your mail account security settings. Your regular account password may not work. Leave the password blank to keep it when editing the same account.",
+        "data": {
           "smtp_enabled": "Enable email notifications and monthly reports",
           "smtp_host": "SMTP server",
           "smtp_port": "SMTP port",
           "smtp_security": "SMTP encryption",
           "smtp_sender": "Sender email",
-          "smtp_username": "SMTP username",
-          "smtp_password": "SMTP password"
-        },
-        "data_description": {
-          "restrict_users": "Selected non-admin accounts are switched to Home Assistant Read Only. They cannot control entities directly, but can still read entity states."
+          "smtp_username": "Email / username",
+          "smtp_password": "App password"
         }
       }
     },
     "error": {
-      "smtp_config": "Enter an SMTP server and a valid sender email."
+      "smtp_config": "Enter an SMTP server and a valid sender email.",
+      "microsoft_oauth": "Microsoft Outlook requires OAuth sign-in. Microsoft username/password authentication is not supported here. Choose another service.",
+      "invalid_email": "Enter a valid email address.",
+      "password_required": "Enter an app password for the new service or account."
+    }
+  },
+  "selector": {
+    "mail_provider": {
+      "options": {
+        "disabled": "Disable email",
+        "gmail": "Google / Gmail",
+        "yahoo": "Yahoo Mail",
+        "icloud": "Apple iCloud",
+        "microsoft": "Microsoft Outlook / Microsoft 365 (OAuth)",
+        "custom": "Other SMTP server"
+      }
     }
   }
 }
