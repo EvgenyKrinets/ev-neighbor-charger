@@ -7,23 +7,75 @@ class EVNeighborChargerPanel extends HTMLElement {
  set hass(hass) {
   const previous=this._hass; this._hass=hass;
   if(!this.isConnected)return;
-  if(!this._data || previous?.connection!==hass.connection) this._refresh();
-  else this._renderStats();
+  if(previous?.connection!==hass.connection){this._resetConnection();this._refresh();}
+  this._subscribe();
  }
  set panel(panel){this._panel=panel;}
- connectedCallback(){this._refresh();this._timer=setInterval(()=>this._refresh(),2000);}
- disconnectedCallback(){clearInterval(this._timer);this._requestGeneration=(this._requestGeneration||0)+1;}
+ connectedCallback(){
+  this._resume=()=>{if(document.visibilityState!=='hidden'){this._resetConnection();this._subscribe();this._refresh();}};
+  document.addEventListener('visibilitychange',this._resume);
+  window.addEventListener('pageshow',this._resume);
+  window.addEventListener('online',this._resume);
+  this._subscribe();this._refresh();
+  this._timer=setInterval(()=>{this._subscribe();this._refresh();},2000);
+ }
+ disconnectedCallback(){
+  clearInterval(this._timer);this._resetConnection();
+  document.removeEventListener('visibilitychange',this._resume);
+  window.removeEventListener('pageshow',this._resume);
+  window.removeEventListener('online',this._resume);
+ }
+ _resetConnection(){
+  this._requestGeneration=(this._requestGeneration||0)+1;
+  this._loading=null;this._subscribing=null;
+  const unsub=this._unsubscribe;this._unsubscribe=null;
+  if(unsub)Promise.resolve().then(unsub).catch(()=>{});
+ }
  _language(){const l=(this._lang||this._hass?.language||'en').split('-')[0];return EV_TEXT[l]?l:'en';}
+ async _subscribe(){
+  const connection=this._hass?.connection;
+  if(!connection||!this.isConnected||this._unsubscribe||this._subscribing)return;
+  const generation=this._requestGeneration||0,token={};this._subscribing=token;
+  // A stalled subscription must not prevent retries forever.
+  const timeout=setTimeout(()=>{if(this._subscribing===token)this._subscribing=null;},10000);
+  try{
+   const unsub=await connection.subscribeMessage(d=>{
+    if(this._subscribing!==token&&this._subscriptionToken!==token)return;
+    if(!this.isConnected||generation!==(this._requestGeneration||0))return;
+    if(d.reload){this._resetConnection();return;}
+    this._pushRevision=(this._pushRevision||0)+1;this._accept(d);
+   },{type:'ev_neighbor_charger/subscribe'});
+   if(!this.isConnected||generation!==(this._requestGeneration||0)||this._subscribing!==token){await unsub();return;}
+   this._subscriptionToken=token;this._unsubscribe=unsub;
+  }catch(e){/* Polling remains available while the integration reconnects. */}
+  finally{clearTimeout(timeout);if(this._subscribing===token)this._subscribing=null;}
+ }
+ _accept(d){
+  if(!this._data&&!this._lang&&d.profile?.language)this._lang=d.profile.language;
+  const structural=x=>JSON.stringify([x?.active?.start,x?.owner,x?.active?.name,x?.busy,x?.sessions,x?.profile,x?.email_enabled,x?.mail_error,x?.can_start,x?.is_admin,x?.version]);
+  const changed=structural(d)!==structural(this._data);
+  this._data=d;this._error='';
+  if(changed||!this.querySelector('#live'))this._render();else this._renderStats();
+  this._showMessage();
+ }
  async _refresh(){
   if(!this._hass?.connection||this._loading||!this.isConnected)return;
-  this._loading=true;const generation=this._requestGeneration||0;
+  const token={};this._loading=token;
+  const generation=this._requestGeneration||0,revision=this._pushRevision||0;
+  let timeout;
   try{
-   const d=await this._hass.connection.sendMessagePromise({type:'ev_neighbor_charger/get'});
-   if(!this._data&&!this._lang&&d.profile?.language)this._lang=d.profile.language;
+   const d=await Promise.race([
+    this._hass.connection.sendMessagePromise({type:'ev_neighbor_charger/get'}),
+    new Promise((_,reject)=>{timeout=setTimeout(()=>reject(new Error(EV_TEXT[this._language()][20])),10000);})
+   ]);
    if(!this.isConnected||generation!==(this._requestGeneration||0))return;
-   const changed=JSON.stringify([d.active?.start,d.owner,d.active?.name,d.busy,d.sessions,d.profile,d.email_enabled,d.mail_error,d.can_start,d.is_admin])!==JSON.stringify([this._data?.active?.start,this._data?.owner,this._data?.active?.name,this._data?.busy,this._data?.sessions,this._data?.profile,this._data?.email_enabled,this._data?.mail_error,this._data?.can_start,this._data?.is_admin]);
-   this._data=d;this._error='';if(changed||!this.querySelector('#live'))this._render();else this._renderStats();
-  }catch(e){this._error=e.message||EV_TEXT[this._language()][20];this._showMessage();}finally{this._loading=false;}
+   // An older poll response must not overwrite a newer pushed reading.
+   if(revision===(this._pushRevision||0))this._accept(d);
+  }catch(e){
+   if(this.isConnected&&generation===(this._requestGeneration||0)&&revision===(this._pushRevision||0)){
+    this._error=e.message||EV_TEXT[this._language()][20];this._showMessage();
+   }
+  }finally{clearTimeout(timeout);if(this._loading===token)this._loading=null;}
  }
  async _start(){
   const button=this.querySelector('#start');if(button)button.disabled=true;
@@ -39,13 +91,11 @@ class EVNeighborChargerPanel extends HTMLElement {
  _renderStats(){
   const node=this.querySelector('#live');if(!node||!this._data)return;
   const d=this._data,a=d.active,t=EV_TEXT[this._language()];
-  // hass entity state updates arrive over Home Assistant's WebSocket.
-  const energyState=this._hass.states[d.entities?.energy],powerState=this._hass.states[d.entities?.power];
-  const energyValue=Number(energyState?.state),powerValue=Number(powerState?.state);
-  const currentEnergy=energyState?(Number.isFinite(energyValue)?energyValue/(energyState.attributes.unit_of_measurement==='Wh'?1000:1):null):d.energy_kwh;
-  const power=powerState?(Number.isFinite(powerValue)?powerValue*(powerState.attributes.unit_of_measurement==='kW'?1000:1):null):d.power_w;
-  const used=a&&currentEnergy!=null?Math.max(0,currentEnergy-a.start_kwh):0;
-  node.innerHTML=`<div><small>${t[5]}</small><strong>${used.toFixed(3)} kWh</strong></div><div><small>${t[6]}</small><strong>₪${(used*(a?.rate||d.rate||0)).toFixed(2)}</strong></div><div><small>${t[7]}</small><strong>${power==null?'—':power.toFixed(0)} W</strong></div>`;
+  // Only use authoritative readings from this integration's server snapshot.
+  // hass.states can be stale after a mobile reconnect and must not override them.
+  const currentEnergy=d.energy_kwh,power=d.power_w;
+  const used=a?(currentEnergy==null?null:Math.max(0,currentEnergy-a.start_kwh)):0;
+  node.innerHTML=`<div><small>${t[5]}</small><strong>${used==null?'—':used.toFixed(3)} kWh</strong></div><div><small>${t[6]}</small><strong>₪${used==null?'—':(used*(a?.rate??d.rate??0)).toFixed(2)}</strong></div><div><small>${t[7]}</small><strong>${power==null?'—':power.toFixed(0)} W</strong></div>`;
  }
  _render(){
   if(!this.isConnected||!this._hass)return;
