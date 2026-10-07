@@ -12,7 +12,7 @@ mail=importlib.util.module_from_spec(spec);spec.loader.exec_module(mail)
 class MailConfigTests(unittest.TestCase):
     def test_presets_set_sender_host_and_tls(self):
         for provider,expected in [('gmail',('smtp.gmail.com',587,'starttls')),('yahoo',('smtp.mail.yahoo.com',465,'ssl')),('icloud',('smtp.mail.me.com',587,'starttls')),('brevo',('smtp-relay.brevo.com',587,'starttls')),('mailjet',('in-v3.mailjet.com',587,'starttls'))]:
-            result=mail.mail_settings(provider,{'smtp_username':'owner@example.com','smtp_password':'app-secret'}, {})
+            result=mail.mail_settings(provider,{'smtp_username':'owner@example.com','smtp_password':'app-secret','smtp_sender':'owner@example.com'}, {})
             self.assertEqual((result['smtp_host'],result['smtp_port'],result['smtp_security']),expected)
             self.assertEqual(result['smtp_sender'],'owner@example.com')
     def test_password_is_not_reused_for_changed_provider_or_account(self):
@@ -28,3 +28,8 @@ class MailConfigTests(unittest.TestCase):
     def test_custom_without_authentication(self):
         result=mail.mail_settings('custom',{'smtp_host':'smtp.example.com','smtp_port':587,'smtp_security':'starttls','smtp_sender':'owner@example.com'}, {})
         self.assertEqual(result['smtp_username'],'')
+
+    def test_mailjet_api_key_is_not_an_email_address(self):
+        result=mail.mail_settings('mailjet',{'smtp_username':'public-api-key','smtp_password':'secret-api-key','smtp_sender':'verified@example.com'}, {})
+        self.assertEqual(result['smtp_username'],'public-api-key')
+        self.assertEqual(result['smtp_sender'],'verified@example.com')
