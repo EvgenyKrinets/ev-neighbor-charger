@@ -96,6 +96,14 @@
           "smtp_password": "Secret Key (private key)",
           "mail_action": "Action"
         }
+      },
+      "mail_test_result": {
+        "title": "SMTP test result",
+        "description": "{result}",
+        "data": {
+          "test_recipient": "Test email recipient",
+          "test_action": "Action"
+        }
       }
     },
     "error": {
@@ -103,7 +111,7 @@
       "microsoft_oauth": "Microsoft Outlook requires OAuth sign-in. Microsoft username/password authentication is not supported here. Choose another service.",
       "invalid_email": "Enter a valid email address.",
       "password_required": "Enter an app password for the new service or account.",
-      "mail_test_failed": "Test email failed. Details are shown above.",
+      "mail_test_failed": "Sending failed: {result}",
       "mail_disabled": "Email sending is disabled. Configure SMTP first."
     }
   },
