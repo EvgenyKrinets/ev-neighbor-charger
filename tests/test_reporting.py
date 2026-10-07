@@ -46,3 +46,16 @@ class ReportTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+class SMTPTestMessageTests(unittest.TestCase):
+    def test_message_is_a_test_not_a_charging_notification(self):
+        msg=reporting.make_message({'kind':'test','email':'recipient@example.com','language':'ru'},'sender@example.com',timezone.utc)
+        self.assertIn('Проверка',msg['Subject'])
+        self.assertEqual(msg['To'],'recipient@example.com')
+        self.assertNotIn('Зарядка началась',msg.get_content())
+
+    def test_error_details_hide_credentials(self):
+        text=reporting.smtp_error_detail(ValueError('535 secret-token user@example.com failed'), {'smtp_password':'secret-token','smtp_username':'user@example.com'})
+        self.assertNotIn('secret-token',text)
+        self.assertNotIn('user@example.com',text)
+        self.assertIn('535',text)
