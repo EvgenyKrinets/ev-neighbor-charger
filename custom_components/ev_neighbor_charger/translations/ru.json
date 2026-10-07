@@ -82,6 +82,20 @@
           "test_recipient": "Куда отправить тестовое письмо",
           "test_action": "Действие"
         }
+      },
+      "mailjet_account": {
+        "title": "Mailjet: ключи и отправитель",
+        "description": "Скопируйте API Key и Secret Key из настроек Mailjet. Это не email и не пароль входа. Подтвердите адрес отправителя или его домен в Mailjet. Сервер in-v3.mailjet.com, порт 587 и STARTTLS настроены автоматически. Выберите «Тест отправки», затем адрес получателя. Пустой Secret Key сохраняет прежний ключ только для того же API Key.\n\n[Mailjet API / SMTP settings](https://app.mailjet.com/account/apikeys)",
+        "data": {
+          "smtp_enabled": "Включить уведомления и ежемесячные отчёты по почте",
+          "smtp_host": "SMTP-сервер",
+          "smtp_port": "Порт SMTP",
+          "smtp_security": "Шифрование SMTP",
+          "smtp_sender": "Подтверждённая почта отправителя",
+          "smtp_username": "API Key (публичный ключ)",
+          "smtp_password": "Secret Key (секретный ключ)",
+          "mail_action": "Действие"
+        }
       }
     },
     "error": {
