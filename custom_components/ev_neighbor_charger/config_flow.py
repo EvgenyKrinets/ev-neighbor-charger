@@ -5,7 +5,8 @@ from homeassistant import config_entries
 from homeassistant.core import callback
 from homeassistant.helpers import selector
 
-from .reporting import valid_email
+from .reporting import valid_email, send_mail, smtp_error_detail
+from homeassistant.util import dt as dt_util
 from .mail_config import mail_settings, PRESETS
 
 from .const import (
@@ -92,7 +93,7 @@ class EVNeighborChargerOptionsFlow(config_entries.OptionsFlow):
         return {**self.config_entry.data, **self.config_entry.options}
 
     async def async_step_init(self, user_input=None):
-        return self.async_show_menu(step_id="init", menu_options=["charger", "mail"])
+        return self.async_show_menu(step_id="init", menu_options=["charger", "mail", "mail_test"])
 
     async def async_step_charger(self, user_input=None):
         data = self._current()
@@ -138,11 +139,18 @@ class EVNeighborChargerOptionsFlow(config_entries.OptionsFlow):
             except ValueError as err:
                 errors["base"] = str(err)
             else:
+                if user_input.get("mail_action", "save") == "test":
+                    self._pending_mail = mail
+                    self._test_status = ""
+                    return await self.async_step_mail_test()
                 return self.async_create_entry(title="", data={**self.config_entry.options, **mail})
         fields = {
             vol.Required("smtp_username", default=(user_input or data).get("smtp_username", "")): selector.TextSelector(),
             vol.Optional("smtp_password"): selector.TextSelector(selector.TextSelectorConfig(type=selector.TextSelectorType.PASSWORD)),
+            vol.Required("mail_action", default="save"): selector.SelectSelector(selector.SelectSelectorConfig(options=["save", "test"], translation_key="mail_action")),
         }
+        if self._provider in ("brevo", "mailjet"):
+            fields[vol.Required("smtp_sender", default=data.get("smtp_sender", ""))] = selector.TextSelector()
         if self._provider == "custom":
             fields.update({
                 vol.Required("smtp_host", default=data.get("smtp_host", "")): selector.TextSelector(),
@@ -151,3 +159,38 @@ class EVNeighborChargerOptionsFlow(config_entries.OptionsFlow):
                 vol.Required("smtp_sender", default=data.get("smtp_sender", "")): selector.TextSelector(),
             })
         return self.async_show_form(step_id="mail_account", data_schema=vol.Schema(fields), errors=errors)
+
+
+    async def async_step_mail_test(self, user_input=None):
+        settings = {**self._current(), **getattr(self, "_pending_mail", {})}
+        errors = {}
+        if user_input is not None:
+            action = user_input.get("test_action", "test")
+            if action == "save":
+                return self.async_create_entry(title="", data={**self.config_entry.options, **getattr(self, "_pending_mail", {})})
+            if action == "back":
+                return await self.async_step_mail_account() if getattr(self, "_pending_mail", None) else await self.async_step_init()
+            recipient = user_input.get("test_recipient", "").strip()
+            if not valid_email(recipient):
+                errors["test_recipient"] = "invalid_email"
+            elif not settings.get("smtp_enabled"):
+                errors["base"] = "mail_disabled"
+            else:
+                language = self.hass.config.language
+                language = language if language in ("ru", "en", "he") else "en"
+                try:
+                    await self.hass.async_add_executor_job(send_mail, settings, {"kind": "test", "email": recipient, "language": language}, dt_util.get_time_zone(self.hass.config.time_zone))
+                except Exception as err:
+                    errors["base"] = "mail_test_failed"
+                    self._test_status = smtp_error_detail(err, settings)
+                else:
+                    self._test_status = {"ru": "SMTP-сервер принял тестовое письмо. Проверьте входящие и спам.", "en": "SMTP accepted the test email. Check your inbox and spam folder.", "he": "שרת SMTP קיבל את הודעת הבדיקה. בדקו את תיבת הדואר ואת תיקיית הספאם."}[language]
+        runtime = self.hass.data.get(DOMAIN, {}).get(self.config_entry.entry_id, {})
+        recipients = {profile.get("email") for profile in runtime.get("profiles", {}).values() if valid_email(profile.get("email"))}
+        if valid_email(settings.get("smtp_sender")):
+            recipients.add(settings["smtp_sender"])
+        fields = {
+            vol.Required("test_recipient", default=(user_input or {}).get("test_recipient", settings.get("smtp_sender", ""))): selector.SelectSelector(selector.SelectSelectorConfig(options=sorted(recipients), custom_value=True, mode=selector.SelectSelectorMode.DROPDOWN)),
+            vol.Required("test_action", default="test"): selector.SelectSelector(selector.SelectSelectorConfig(options=["test", "save", "back"], translation_key="test_action")),
+        }
+        return self.async_show_form(step_id="mail_test", data_schema=vol.Schema(fields), errors=errors, description_placeholders={"result": getattr(self, "_test_status", "")})
