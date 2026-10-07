@@ -20,7 +20,7 @@ class SubscriptionTests(unittest.TestCase):
             return lambda: active.discard(key)
         user=object()
         connection=SimpleNamespace(user=user,subscriptions={},send_result=lambda i:messages.append(('result',i)),send_event=lambda i,d:messages.append(('event',i,d)))
-        namespace={'callback':lambda fn:fn,'DOMAIN':'ev_neighbor_charger','CONF_POWER':'power','CONF_ENERGY':'energy','CONF_SWITCH':'switch','settings':{'power':'sensor.power','energy':'sensor.energy','switch':'switch.charger'},'data':{},'snapshot':lambda recipient:{'recipient':recipient},'async_track_state_change_event':lambda hass,entities,fn:register(tuple(entities),fn),'async_dispatcher_connect':lambda hass,signal,fn:register(signal,fn)}
+        namespace={'authorized':lambda connection,msg:True,'callback':lambda fn:fn,'DOMAIN':'ev_neighbor_charger','CONF_POWER':'power','CONF_ENERGY':'energy','CONF_SWITCH':'switch','settings':{'power':'sensor.power','energy':'sensor.energy','switch':'switch.charger'},'data':{},'snapshot':lambda recipient:{'recipient':recipient},'async_track_state_change_event':lambda hass,entities,fn:register(tuple(entities),fn),'async_dispatcher_connect':lambda hass,signal,fn:register(signal,fn)}
         exec(compile(module,str(SOURCE),'exec'),namespace)
         namespace['ws_subscribe'](object(),connection,{'id':7})
         self.assertEqual(messages[0],('result',7))

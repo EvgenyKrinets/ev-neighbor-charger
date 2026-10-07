@@ -34,7 +34,7 @@ Choose the relay, sensors, allowed Home Assistant users, tariff and shutoff rule
 | **Automatic idle shutoff** | If power stays below the configured threshold for the configured delay, the integration switches the charger off. Defaults: **100 W for 2 minutes**. |
 | **Session accounting** | Records the active user, energy used and cost at the configured price per kWh. |
 | **Personal history** | Neighbors see their own sessions; an administrator can review all sessions. |
-| **Optional read-only access** | Selected non-admin accounts can be moved to Home Assistant's built-in Read Only group, with their previous groups saved for restoration. |
+| **Optional read-only access** | Selected non-admin accounts automatically open the charging panel without navigation. Their general entity permissions are removed, with original groups saved for restoration. Kiosk navigation does not isolate every Home Assistant API; use a separate portal for complete isolation. |
 | **English and Russian** | Setup labels and descriptions are available in both languages. |
 
 ## How a charging session works

@@ -11,13 +11,12 @@ import logging
 from pathlib import Path
 
 from homeassistant.components import websocket_api
-from homeassistant.components.frontend import async_register_built_in_panel
+from homeassistant.components.frontend import async_register_built_in_panel, add_extra_js_url
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.event import async_track_state_change_event, async_call_later, async_track_time_interval
 from homeassistant.helpers.storage import Store
 from homeassistant.helpers.dispatcher import async_dispatcher_connect, async_dispatcher_send
 from homeassistant.components.http import StaticPathConfig
-from homeassistant.auth.const import GROUP_ID_READ_ONLY
 from homeassistant.core import Context
 
 from .const import (
@@ -54,8 +53,8 @@ async def async_setup_entry(hass: HomeAssistant, entry):
     allowed_users = set(settings.get(CONF_USERS, []))
     restrict_users = bool(settings.get(CONF_READ_ONLY_USERS, True))
 
-    # Selected neighbors are placed in Home Assistant's built-in read-only
-    # group. Keep their original groups so changes/removal can restore them.
+    # Restricted neighbors have no general entity permissions. Charging uses
+    # explicitly authorized integration commands. Preserve original groups.
     for user_id in list(managed_users):
         if user_id not in allowed_users or not restrict_users:
             user = await hass.auth.async_get_user(user_id)
@@ -69,8 +68,8 @@ async def async_setup_entry(hass: HomeAssistant, entry):
                 continue
             if user_id not in managed_users:
                 managed_users[user_id] = [group.id for group in user.groups]
-            if [group.id for group in user.groups] != [GROUP_ID_READ_ONLY]:
-                await hass.auth.async_update_user(user, group_ids=[GROUP_ID_READ_ONLY])
+            if user.groups:
+                await hass.auth.async_update_user(user, group_ids=[])
 
     data = {"entry": entry, "store": store, "sessions": stored.get("sessions", []), "active": stored.get("active"), "timer": None, "closing": False, "managed_users": managed_users,
             "profiles": stored.get("profiles", {}), "outbox": stored.get("outbox", []), "monthly": stored.get("monthly", []), "mail_error": None, "mail_lock": asyncio.Lock(), "starting": False, "stopped": False}
@@ -214,16 +213,42 @@ async def async_setup_entry(hass: HomeAssistant, entry):
         can_start = is_admin or bool(user and user.id in allowed)
         return {"active": active, "sessions": list(reversed(visible[-100:])), "totals": totals, "power_w": current_power, "power_updated": power_state.last_updated.isoformat() if power_state else None, "energy_updated": energy_state.last_updated.isoformat() if energy_state else None, "energy_kwh": current_energy, "busy": bool(data["active"]), "owner": data["active"].get("name") if data["active"] else None, "is_admin": is_admin, "can_start": can_start, "rate": float(settings.get(CONF_RATE, 0)), "version": VERSION, "suggested_email": suggested_email(user), "profile": data["profiles"].get(user.id, {}) if user else {}, "entities": {"power": settings[CONF_POWER], "energy": settings[CONF_ENERGY]}, "email_enabled": bool(settings.get("smtp_enabled")), "mail_error": data["mail_error"] if is_admin else None}
 
+    @callback
+    def authorized(connection, msg):
+        user = connection.user
+        if user and (user.is_admin or user.id in settings.get(CONF_USERS, [])):
+            return True
+        connection.send_error(msg["id"], websocket_api.ERR_UNAUTHORIZED, "User not allowed")
+        return False
+
+    @websocket_api.websocket_command({"type": f"{DOMAIN}/access"})
+    @websocket_api.async_response
+    async def ws_access(hass, connection, msg):
+        user = connection.user
+        connection.send_result(msg["id"], {
+            "restricted": bool(user and not user.is_admin and
+                user.id in settings.get(CONF_USERS, []) and
+                settings.get(CONF_READ_ONLY_USERS, True)),
+            "path": f"/{PANEL_PATH}",
+        })
+
+    websocket_api.async_register_command(hass, ws_access)
+
     @websocket_api.websocket_command({"type": f"{DOMAIN}/get"})
     @websocket_api.async_response
     async def ws_get(hass, connection, msg):
-        connection.send_result(msg["id"], snapshot(connection.user))
+        if authorized(connection, msg):
+            connection.send_result(msg["id"], snapshot(connection.user))
 
     @websocket_api.websocket_command({"type": f"{DOMAIN}/subscribe"})
     @callback
     def ws_subscribe(hass, connection, msg):
+        if not authorized(connection, msg):
+            return
         @callback
         def send_update(*_args):
+            if not authorized(connection, msg):
+                return
             connection.send_event(msg["id"], snapshot(connection.user))
 
         unsubs = [
@@ -314,6 +339,13 @@ async def async_setup_entry(hass: HomeAssistant, entry):
     websocket_api.async_register_command(hass, ws_subscribe)
     websocket_api.async_register_command(hass, ws_get)
     websocket_api.async_register_command(hass, ws_start)
+
+    if not domain_data.get("_kiosk_registered"):
+        await hass.http.async_register_static_paths([
+            StaticPathConfig(f"/{DOMAIN}/kiosk.js", Path(__file__).parent / "kiosk.js", cache_headers=False)
+        ])
+        add_extra_js_url(hass, f"/{DOMAIN}/kiosk.js?v={VERSION}")
+        domain_data["_kiosk_registered"] = True
 
     js_path = Path(__file__).parent / "panel.js"
     if not domain_data.get("_panel_static_path_registered"):
