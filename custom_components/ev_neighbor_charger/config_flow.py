@@ -147,7 +147,7 @@ class EVNeighborChargerOptionsFlow(config_entries.OptionsFlow):
         fields = {
             vol.Required("smtp_username", default=(user_input or data).get("smtp_username", "")): selector.TextSelector(),
             vol.Optional("smtp_password"): selector.TextSelector(selector.TextSelectorConfig(type=selector.TextSelectorType.PASSWORD)),
-            vol.Required("mail_action", default="save"): selector.SelectSelector(selector.SelectSelectorConfig(options=["save", "test"], translation_key="mail_action")),
+            vol.Required("mail_action", default="test"): selector.SelectSelector(selector.SelectSelectorConfig(options=["save", "test"], translation_key="mail_action")),
         }
         if self._provider in ("brevo", "mailjet"):
             fields[vol.Required("smtp_sender", default=(user_input or data).get("smtp_sender", ""))] = selector.TextSelector()
@@ -168,6 +168,8 @@ class EVNeighborChargerOptionsFlow(config_entries.OptionsFlow):
     async def async_step_mail_test(self, user_input=None):
         settings = {**self._current(), **getattr(self, "_pending_mail", {})}
         errors = {}
+        self._test_status = ""
+        tested = False
         if user_input is not None:
             action = user_input.get("test_action", "test")
             if action == "save":
@@ -180,6 +182,7 @@ class EVNeighborChargerOptionsFlow(config_entries.OptionsFlow):
             elif not settings.get("smtp_enabled"):
                 errors["base"] = "mail_disabled"
             else:
+                tested = True
                 language = self.hass.config.language
                 language = language if language in ("ru", "en", "he") else "en"
                 try:
@@ -197,4 +200,7 @@ class EVNeighborChargerOptionsFlow(config_entries.OptionsFlow):
             vol.Required("test_recipient", default=(user_input or {}).get("test_recipient", settings.get("smtp_sender", ""))): selector.SelectSelector(selector.SelectSelectorConfig(options=sorted(recipients), custom_value=True, mode=selector.SelectSelectorMode.DROPDOWN)),
             vol.Required("test_action", default="test"): selector.SelectSelector(selector.SelectSelectorConfig(options=["test", "save", "back"], translation_key="test_action")),
         }
-        return self.async_show_form(step_id="mail_test", data_schema=vol.Schema(fields), errors=errors, description_placeholders={"result": getattr(self, "_test_status", "")})
+        return self.async_show_form(step_id="mail_test_result" if tested else "mail_test", data_schema=vol.Schema(fields), errors=errors, description_placeholders={"result": getattr(self, "_test_status", "")})
+
+    async def async_step_mail_test_result(self, user_input=None):
+        return await self.async_step_mail_test(user_input)
