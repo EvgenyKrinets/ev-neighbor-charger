@@ -45,3 +45,14 @@ test('start button is hidden during charging and owner is prominent',()=>{
  p._data={...reading(),busy:false,active:null,can_start:true};p._render();assert.match(p.innerHTML,/id="start"/);
  p._starting=true;p._render();assert.doesNotMatch(p.innerHTML,/id="start"/);
 });
+
+test('saved email hides form; settings can reopen it without SMTP test button',()=>{
+ const {p}=setup();delete p._render;p.querySelector=()=>({});p._data={...reading(),can_start:true,profile:{email:'user@example.com'}};p._render();
+ assert.doesNotMatch(p.innerHTML,/id="email"/);assert.doesNotMatch(p.innerHTML,/id="test-email"/);assert.match(p.innerHTML,/id="profile-settings"/);
+ p._editingEmail=true;p._render();assert.match(p.innerHTML,/id="email"/);
+});
+test('successful save hides form immediately even while polling is busy',async()=>{
+ const {p}=setup();p._data={...reading(),profile:{}};p._editingEmail=true;p._loading={};
+ p.querySelector=k=>k==='#email'?{value:'user@example.com'}:null;
+ p._hass.connection.sendMessagePromise=async()=>({saved:true});await p._save();assert.equal(p._editingEmail,false);assert.equal(p._data.profile.email,'user@example.com');
+});
