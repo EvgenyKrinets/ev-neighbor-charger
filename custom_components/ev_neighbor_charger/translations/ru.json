@@ -96,6 +96,14 @@
           "smtp_password": "Secret Key (секретный ключ)",
           "mail_action": "Действие"
         }
+      },
+      "mail_test_result": {
+        "title": "Результат теста SMTP",
+        "description": "{result}",
+        "data": {
+          "test_recipient": "Куда отправить тестовое письмо",
+          "test_action": "Действие"
+        }
       }
     },
     "error": {
@@ -103,7 +111,7 @@
       "microsoft_oauth": "Microsoft Outlook требует OAuth — входа через Microsoft. Подключение Microsoft по логину и паролю здесь не поддерживается. Выберите другой сервис.",
       "invalid_email": "Введите корректный адрес почты.",
       "password_required": "Введите пароль приложения для нового сервиса или аккаунта.",
-      "mail_test_failed": "Не удалось отправить тестовое письмо. Подробности показаны выше.",
+      "mail_test_failed": "Ошибка отправки: {result}",
       "mail_disabled": "Отправка почты отключена. Сначала настройте SMTP."
     }
   },
