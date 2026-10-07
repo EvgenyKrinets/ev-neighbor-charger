@@ -93,6 +93,14 @@
           "smtp_password": "Secret Key (מפתח סודי)",
           "mail_action": "פעולה"
         }
+      },
+      "mail_test_result": {
+        "title": "תוצאת בדיקת SMTP",
+        "description": "{result}",
+        "data": {
+          "test_recipient": "כתובת לקבלת הודעת הבדיקה",
+          "test_action": "פעולה"
+        }
       }
     },
     "error": {
@@ -100,7 +108,7 @@
       "microsoft_oauth": "Microsoft Outlook דורש כניסה באמצעות OAuth. כניסה בשם משתמש וסיסמה אינה נתמכת כאן. יש לבחור שירות אחר.",
       "invalid_email": "יש להזין כתובת דוא״ל תקינה.",
       "password_required": "יש להזין סיסמה ייעודית לשירות או לחשבון החדש.",
-      "mail_test_failed": "שליחת הבדיקה נכשלה. הפרטים מוצגים למעלה.",
+      "mail_test_failed": "השליחה נכשלה: {result}",
       "mail_disabled": "שליחת דוא״ל כבויה. יש להגדיר SMTP תחילה."
     }
   },
