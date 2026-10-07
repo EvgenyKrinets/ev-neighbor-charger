@@ -82,6 +82,20 @@
           "test_recipient": "Test email recipient",
           "test_action": "Action"
         }
+      },
+      "mailjet_account": {
+        "title": "Mailjet: keys and sender",
+        "description": "Copy API Key and Secret Key from Mailjet settings. These are not your email or sign-in password. Validate the sender email or domain in Mailjet. Server in-v3.mailjet.com, port 587 and STARTTLS are automatic. Choose Test sending, then a recipient. A blank Secret Key preserves the saved key only for the same API Key.\n\n[Mailjet API / SMTP settings](https://app.mailjet.com/account/apikeys)",
+        "data": {
+          "smtp_enabled": "Enable email notifications and monthly reports",
+          "smtp_host": "SMTP server",
+          "smtp_port": "SMTP port",
+          "smtp_security": "SMTP encryption",
+          "smtp_sender": "Verified sender email",
+          "smtp_username": "API Key (public key)",
+          "smtp_password": "Secret Key (private key)",
+          "mail_action": "Action"
+        }
       }
     },
     "error": {
