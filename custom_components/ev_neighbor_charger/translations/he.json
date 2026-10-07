@@ -79,6 +79,20 @@
           "test_recipient": "כתובת לקבלת הודעת הבדיקה",
           "test_action": "פעולה"
         }
+      },
+      "mailjet_account": {
+        "title": "Mailjet: מפתחות ושולח",
+        "description": "העתיקו API Key ו-Secret Key מהגדרות Mailjet. אלה אינם דוא״ל או סיסמת הכניסה. אמתו את השולח או הדומיין ב-Mailjet. השרת in-v3.mailjet.com, פורט 587 ו-STARTTLS מוגדרים אוטומטית. בחרו בדיקת שליחה ואז נמען. Secret Key ריק שומר את המפתח הקיים רק עבור אותו API Key.\n\n[Mailjet API / SMTP settings](https://app.mailjet.com/account/apikeys)",
+        "data": {
+          "smtp_enabled": "הפעלת הודעות ודוחות חודשיים בדוא״ל",
+          "smtp_host": "שרת SMTP",
+          "smtp_port": "פורט SMTP",
+          "smtp_security": "הצפנת SMTP",
+          "smtp_sender": "כתובת שולח מאומתת",
+          "smtp_username": "API Key (מפתח ציבורי)",
+          "smtp_password": "Secret Key (מפתח סודי)",
+          "mail_action": "פעולה"
+        }
       }
     },
     "error": {
