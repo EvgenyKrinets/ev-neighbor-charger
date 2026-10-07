@@ -27,6 +27,13 @@ def make_message(job, sender, tz):
     if language not in LABELS:
         language = "en"
     labels = LABELS[language]
+    if job["kind"] == "test":
+        msg = EmailMessage()
+        msg["From"] = sender
+        msg["To"] = job["email"]
+        msg["Subject"] = {"ru": "Проверка почты EV Neighbor Charger", "en": "EV Neighbor Charger email test", "he": "בדיקת דוא״ל EV Neighbor Charger"}[language]
+        msg.set_content({"ru": "Это тестовое письмо из настроек интеграции EV Neighbor Charger. SMTP-сервер принял отправку.", "en": "This is a test email from EV Neighbor Charger integration settings. The SMTP server accepted the message.", "he": "זוהי הודעת בדיקה מהגדרות EV Neighbor Charger. שרת SMTP קיבל את ההודעה."}[language])
+        return msg
     records = job["records"]
     subject = labels[{"start": 0, "end": 1, "monthly": 2}[job["kind"]]]
     if job.get("month"):
@@ -65,3 +72,13 @@ def send_mail(settings, job, tz):
         if settings.get("smtp_username"):
             client.login(settings["smtp_username"], settings.get("smtp_password", ""))
         client.send_message(message)
+
+
+def smtp_error_detail(error, settings):
+    """Describe SMTP failures without showing login secrets or header controls."""
+    detail = str(error)
+    for key in ("smtp_password", "smtp_username"):
+        secret = settings.get(key)
+        if secret:
+            detail = detail.replace(secret, "[redacted]")
+    return " ".join(detail.split())[:600] or type(error).__name__
