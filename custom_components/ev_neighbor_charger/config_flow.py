@@ -150,7 +150,7 @@ class EVNeighborChargerOptionsFlow(config_entries.OptionsFlow):
             vol.Required("mail_action", default="save"): selector.SelectSelector(selector.SelectSelectorConfig(options=["save", "test"], translation_key="mail_action")),
         }
         if self._provider in ("brevo", "mailjet"):
-            fields[vol.Required("smtp_sender", default=data.get("smtp_sender", ""))] = selector.TextSelector()
+            fields[vol.Required("smtp_sender", default=(user_input or data).get("smtp_sender", ""))] = selector.TextSelector()
         if self._provider == "custom":
             fields.update({
                 vol.Required("smtp_host", default=data.get("smtp_host", "")): selector.TextSelector(),
@@ -158,7 +158,11 @@ class EVNeighborChargerOptionsFlow(config_entries.OptionsFlow):
                 vol.Required("smtp_security", default=data.get("smtp_security", "starttls")): selector.SelectSelector(selector.SelectSelectorConfig(options=["starttls", "ssl"])),
                 vol.Required("smtp_sender", default=data.get("smtp_sender", "")): selector.TextSelector(),
             })
-        return self.async_show_form(step_id="mail_account", data_schema=vol.Schema(fields), errors=errors)
+        return self.async_show_form(step_id="mailjet_account" if self._provider == "mailjet" else "mail_account", data_schema=vol.Schema(fields), errors=errors)
+
+    async def async_step_mailjet_account(self, user_input=None):
+        self._provider = "mailjet"
+        return await self.async_step_mail_account(user_input)
 
 
     async def async_step_mail_test(self, user_input=None):
