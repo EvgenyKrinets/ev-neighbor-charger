@@ -23,11 +23,14 @@ def mail_settings(provider, values, previous):
     result = {"smtp_provider": provider, "smtp_enabled": True, "smtp_username": username, "smtp_password": password}
     if provider in PRESETS:
         host, port, security = PRESETS[provider]
-        if not valid_email(username):
+        sender = values.get("smtp_sender", "").strip() if provider in ("brevo", "mailjet") else username
+        if not valid_email(sender):
             raise ValueError("invalid_email")
+        if not username:
+            raise ValueError("smtp_config")
         if not password:
             raise ValueError("password_required")
-        result.update(smtp_host=host, smtp_port=port, smtp_security=security, smtp_sender=username)
+        result.update(smtp_host=host, smtp_port=port, smtp_security=security, smtp_sender=sender)
     elif provider == "custom":
         if not values.get("smtp_host", "").strip() or not valid_email(values.get("smtp_sender", "")):
             raise ValueError("smtp_config")
