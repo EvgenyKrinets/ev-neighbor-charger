@@ -34,7 +34,8 @@
         "title": "EV Neighbor Charger",
         "menu_options": {
           "charger": "Charging and access",
-          "mail": "Outgoing email"
+          "mail": "Outgoing email",
+          "mail_test": "Test SMTP"
         }
       },
       "charger": {
@@ -70,7 +71,16 @@
           "smtp_security": "SMTP encryption",
           "smtp_sender": "Sender email",
           "smtp_username": "Email / username",
-          "smtp_password": "App password"
+          "smtp_password": "App password",
+          "mail_action": "Action"
+        }
+      },
+      "mail_test": {
+        "title": "Test email sending",
+        "description": "Choose a saved address or enter any email. Select Test sending and submit. You can save the settings after testing.\n\n{result}",
+        "data": {
+          "test_recipient": "Test email recipient",
+          "test_action": "Action"
         }
       }
     },
@@ -78,7 +88,9 @@
       "smtp_config": "Enter an SMTP server and a valid sender email.",
       "microsoft_oauth": "Microsoft Outlook requires OAuth sign-in. Microsoft username/password authentication is not supported here. Choose another service.",
       "invalid_email": "Enter a valid email address.",
-      "password_required": "Enter an app password for the new service or account."
+      "password_required": "Enter an app password for the new service or account.",
+      "mail_test_failed": "Test email failed. Details are shown above.",
+      "mail_disabled": "Email sending is disabled. Configure SMTP first."
     }
   },
   "selector": {
@@ -92,6 +104,19 @@
         "custom": "Other SMTP server",
         "brevo": "Brevo (300 emails/day)",
         "mailjet": "Mailjet (6000 emails/month)"
+      }
+    },
+    "test_action": {
+      "options": {
+        "test": "Test sending",
+        "save": "Save settings",
+        "back": "Back"
+      }
+    },
+    "mail_action": {
+      "options": {
+        "test": "Test sending",
+        "save": "Save settings"
       }
     }
   }
