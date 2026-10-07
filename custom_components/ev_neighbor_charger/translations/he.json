@@ -34,7 +34,8 @@
         "title": "EV Neighbor Charger",
         "menu_options": {
           "charger": "טעינה והרשאות",
-          "mail": "שליחת דוא״ל"
+          "mail": "שליחת דוא״ל",
+          "mail_test": "בדיקת SMTP"
         }
       },
       "charger": {
@@ -67,7 +68,16 @@
           "smtp_security": "הצפנת SMTP",
           "smtp_sender": "כתובת השולח",
           "smtp_username": "דוא״ל / שם משתמש",
-          "smtp_password": "סיסמה ייעודית לאפליקציה"
+          "smtp_password": "סיסמה ייעודית לאפליקציה",
+          "mail_action": "פעולה"
+        }
+      },
+      "mail_test": {
+        "title": "בדיקת שליחת דוא״ל",
+        "description": "בחרו כתובת שמורה או הזינו כתובת חדשה. בחרו בדיקת שליחה ושלחו את הטופס. ניתן לשמור לאחר הבדיקה.\n\n{result}",
+        "data": {
+          "test_recipient": "כתובת לקבלת הודעת הבדיקה",
+          "test_action": "פעולה"
         }
       }
     },
@@ -75,7 +85,9 @@
       "smtp_config": "יש להזין שרת SMTP וכתובת שולח תקינה.",
       "microsoft_oauth": "Microsoft Outlook דורש כניסה באמצעות OAuth. כניסה בשם משתמש וסיסמה אינה נתמכת כאן. יש לבחור שירות אחר.",
       "invalid_email": "יש להזין כתובת דוא״ל תקינה.",
-      "password_required": "יש להזין סיסמה ייעודית לשירות או לחשבון החדש."
+      "password_required": "יש להזין סיסמה ייעודית לשירות או לחשבון החדש.",
+      "mail_test_failed": "שליחת הבדיקה נכשלה. הפרטים מוצגים למעלה.",
+      "mail_disabled": "שליחת דוא״ל כבויה. יש להגדיר SMTP תחילה."
     }
   },
   "selector": {
@@ -89,6 +101,19 @@
         "custom": "שרת SMTP אחר",
         "brevo": "Brevo (300 הודעות ביום)",
         "mailjet": "Mailjet (6000 הודעות בחודש)"
+      }
+    },
+    "test_action": {
+      "options": {
+        "test": "בדיקת שליחה",
+        "save": "שמירת הגדרות",
+        "back": "חזרה"
+      }
+    },
+    "mail_action": {
+      "options": {
+        "test": "בדיקת שליחה",
+        "save": "שמירת הגדרות"
       }
     }
   }
