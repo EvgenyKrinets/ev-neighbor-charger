@@ -39,12 +39,14 @@ class SMTPOptionsTests(IsolatedAsyncioTestCase):
         self.assertEqual(self.calls[0][2]['email'],'typed@example.com')
         self.assertEqual(self.calls[0][2]['kind'],'test')
         self.assertEqual(result['errors'],{})
+        self.assertEqual(result['step_id'],'mail_test_result')
         self.assertIn('принял',result['description_placeholders']['result'])
 
     async def test_failure_remains_in_form(self):
         flow=self.make_flow(fail=True)
         result=await flow.async_step_mail_test({'test_recipient':'typed@example.com','test_action':'test'})
         self.assertEqual(result['errors']['base'],'mail_test_failed')
+        self.assertEqual(result['step_id'],'mail_test_result')
         self.assertIn('535',result['description_placeholders']['result'])
 
     async def test_save_does_not_send_another_message(self):
@@ -53,3 +55,14 @@ class SMTPOptionsTests(IsolatedAsyncioTestCase):
         result=await flow.async_step_mail_test({'test_action':'save'})
         self.assertEqual(result['data']['smtp_host'],'new.example.com')
         self.assertEqual(self.calls,[])
+
+    async def test_result_submit_retries_and_updates_status(self):
+        flow=self.make_flow(fail=True)
+        first=await flow.async_step_mail_test({"test_recipient":"typed@example.com","test_action":"test"})
+        self.assertEqual(first["step_id"],"mail_test_result")
+        async def success(*args): self.calls.append(args)
+        flow.hass.async_add_executor_job=success
+        result=await flow.async_step_mail_test_result({"test_recipient":"typed@example.com","test_action":"test"})
+        self.assertEqual(len(self.calls),2)
+        self.assertEqual(result["errors"],{})
+        self.assertNotIn("535",result["description_placeholders"]["result"])
