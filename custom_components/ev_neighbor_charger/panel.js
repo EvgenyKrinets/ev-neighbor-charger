@@ -94,6 +94,15 @@ class EVNeighborChargerPanel extends HTMLElement {
   }catch(e){this._error=e.message;this._showMessage();}
  }
  _showMessage(){const node=this.querySelector('#message');if(node)node.textContent=this._error||'';}
+ _openEmailSettings(){
+  this._editingEmail=true;
+  this._render();
+  const email=this.querySelector('#email');
+  if(email){
+   email.scrollIntoView?.({behavior:'smooth',block:'center'});
+   email.focus?.({preventScroll:true});
+  }
+ }
  _renderStats(){
   const node=this.querySelector('#live');if(!node||!this._data)return;
   const d=this._data,a=d.active,t=EV_TEXT[this._language()];
@@ -122,7 +131,7 @@ class EVNeighborChargerPanel extends HTMLElement {
   <section class="card"><h2 class="section-title">${t[8]}</h2><div class="scroll"><table><thead><tr><th>${t[9]}</th><th>${t[10]}</th>${d.is_admin?`<th>${t[11]}</th>`:''}<th>${t[26]}</th><th>kWh</th><th>₪</th></tr></thead><tbody>${rows||`<tr><td colspan="6">${t[18]}</td></tr>`}</tbody></table></div></section></main>`;
   this.querySelector('#language').onchange=e=>{this._lang=e.target.value;this._render();};
   const start=this.querySelector('#start');if(start)start.onclick=()=>this._start();
-  const save=this.querySelector('#save');if(save)save.onclick=()=>this._save();const settings=this.querySelector('#profile-settings');if(settings)settings.onclick=()=>{this._editingEmail=!this._editingEmail;this._draft=null;this._render();};this._renderStats();
+  const save=this.querySelector('#save');if(save)save.onclick=()=>this._save();const settings=this.querySelector('#profile-settings');if(settings)settings.onclick=()=>this._openEmailSettings();this._renderStats();
  }
  _esc(value){return String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 }
