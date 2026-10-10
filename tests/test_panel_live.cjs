@@ -51,6 +51,15 @@ test('saved email hides form; settings can reopen it without SMTP test button',(
  assert.doesNotMatch(p.innerHTML,/id="email"/);assert.doesNotMatch(p.innerHTML,/id="test-email"/);assert.match(p.innerHTML,/id="profile-settings"/);
  p._editingEmail=true;p._render();assert.match(p.innerHTML,/id="email"/);
 });
+test('settings gear reveals or locates email field when no email is saved',()=>{
+ const {p}=setup();p._data={...reading(),can_start:true,profile:{}};
+ let scrolled=0,focused=0,renders=0;
+ p.querySelector=k=>k==='#email'?{scrollIntoView(){scrolled++;},focus(){focused++;}}:null;
+ p._render=()=>{renders++;};
+ p._openEmailSettings();
+ assert.equal(p._editingEmail,true);assert.equal(renders,1);
+ assert.equal(scrolled,1);assert.equal(focused,1);
+});
 test('successful save hides form immediately even while polling is busy',async()=>{
  const {p}=setup();p._data={...reading(),profile:{}};p._editingEmail=true;p._loading={};
  p.querySelector=k=>k==='#email'?{value:'user@example.com'}:null;
