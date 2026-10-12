@@ -86,3 +86,11 @@ test('menu is admin only and email icon is @',()=>{
  assert.match(p.innerHTML,/id="ha-menu"/);assert.match(p.innerHTML,/>@<\/button>/);
  p._data.is_admin=false;p._render();assert.doesNotMatch(p.innerHTML,/id="ha-menu"/);
 });
+test('history footer sums only filtered sessions and clears when no matches',()=>{
+ const {p,nodes}=setup();nodes['#history-rows']={};nodes['#history-total']={};
+ p._data={is_admin:true,sessions:[{name:'Anna',start:'2026-10-01T10:00:00Z',end:'2026-10-01T11:30:00Z',energy_kwh:10.5,cost:6.83},{name:'Anna',start:'2026-10-02T10:00:00Z',end:'2026-10-02T10:30:00Z',energy_kwh:2.25,cost:1.46},{name:'Boris',start:'2026-10-03T10:00:00Z',end:'2026-10-03T11:00:00Z',energy_kwh:100,cost:65}]};
+ p._historyName='anna';p._renderHistory();
+ assert.match(nodes['#history-total'].innerHTML,/colspan="3"/);assert.match(nodes['#history-total'].innerHTML,/>120.0</);assert.match(nodes['#history-total'].innerHTML,/>12.750</);assert.match(nodes['#history-total'].innerHTML,/₪8.29/);
+ p._historyName='missing';p._renderHistory();assert.match(nodes['#history-total'].innerHTML,/₪0.00/);
+ p._data.is_admin=false;p._renderHistory();assert.match(nodes['#history-total'].innerHTML,/colspan="2"/);
+});
