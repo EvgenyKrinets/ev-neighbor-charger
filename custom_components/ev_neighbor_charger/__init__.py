@@ -170,6 +170,9 @@ async def async_setup_entry(hass: HomeAssistant, entry):
             return
         new_state = event.data.get("new_state")
         power = _num(new_state, "w") if new_state else None
+        if power is not None and power > float(settings.get(CONF_IDLE_W, 100)) and not data["active"].get("has_load"):
+            data["active"]["has_load"] = True
+            hass.async_create_task(persist())
         below = power is not None and power <= float(settings.get(CONF_IDLE_W, 100))
         if below and data["timer"] is None:
             data["timer"] = async_call_later(hass, int(settings.get(CONF_IDLE_SECONDS, 120)), low_power_callback)
@@ -190,6 +193,9 @@ async def async_setup_entry(hass: HomeAssistant, entry):
     if data["active"]:
         # Recover a session after a restart and resume its idle timer if needed.
         power = _num(hass.states.get(settings[CONF_POWER]), "w") if hass.states.get(settings[CONF_POWER]) else None
+        if power is not None and power > float(settings.get(CONF_IDLE_W, 100)):
+            data["active"]["has_load"] = True
+            await persist()
         if power is not None and power <= float(settings.get(CONF_IDLE_W, 100)):
             data["timer"] = async_call_later(hass, int(settings.get(CONF_IDLE_SECONDS, 120)), low_power_callback)
 
@@ -211,7 +217,16 @@ async def async_setup_entry(hass: HomeAssistant, entry):
         totals = {"kwh": round(sum(s.get("energy_kwh", 0) for s in visible), 3), "cost": round(sum(s.get("cost", 0) for s in visible), 2)}
         allowed = settings.get(CONF_USERS, [])
         can_start = is_admin or bool(user and user.id in allowed)
-        return {"active": active, "sessions": list(reversed(visible[-100:])), "totals": totals, "power_w": current_power, "power_updated": power_state.last_updated.isoformat() if power_state else None, "energy_updated": energy_state.last_updated.isoformat() if energy_state else None, "energy_kwh": current_energy, "busy": bool(data["active"]), "owner": data["active"].get("name") if data["active"] else None, "is_admin": is_admin, "can_start": can_start, "rate": float(settings.get(CONF_RATE, 0)), "version": VERSION, "suggested_email": suggested_email(user), "profile": data["profiles"].get(user.id, {}) if user else {}, "entities": {"power": settings[CONF_POWER], "energy": settings[CONF_ENERGY]}, "email_enabled": bool(settings.get("smtp_enabled")), "mail_error": data["mail_error"] if is_admin else None}
+        session = data["active"]
+        phase = "available"
+        if session:
+            if current_power is None:
+                phase = "unavailable"
+            elif current_power > float(settings.get(CONF_IDLE_W, 100)):
+                phase = "charging"
+            else:
+                phase = "finishing" if session.get("has_load") else "preparing"
+        return {"active": active, "sessions": list(reversed(visible)), "totals": totals, "charge_phase": phase, "power_w": current_power, "power_updated": power_state.last_updated.isoformat() if power_state else None, "energy_updated": energy_state.last_updated.isoformat() if energy_state else None, "energy_kwh": current_energy, "busy": bool(data["active"]), "owner": data["active"].get("name") if data["active"] else None, "is_admin": is_admin, "can_start": can_start, "rate": float(settings.get(CONF_RATE, 0)), "version": VERSION, "suggested_email": suggested_email(user), "profile": data["profiles"].get(user.id, {}) if user else {}, "entities": {"power": settings[CONF_POWER], "energy": settings[CONF_ENERGY]}, "email_enabled": bool(settings.get("smtp_enabled")), "mail_error": data["mail_error"] if is_admin else None}
 
     @callback
     def authorized(connection, msg):
@@ -312,6 +327,9 @@ async def async_setup_entry(hass: HomeAssistant, entry):
             hass.async_create_task(deliver())
         power_state = hass.states.get(settings[CONF_POWER])
         power = _num(power_state, "w") if power_state else None
+        if data["active"] and power is not None and power > float(settings.get(CONF_IDLE_W, 100)):
+            data["active"]["has_load"] = True
+            await persist()
         if power is not None and power <= float(settings.get(CONF_IDLE_W, 100)):
             data["timer"] = async_call_later(hass, int(settings.get(CONF_IDLE_SECONDS, 120)), low_power_callback)
         connection.send_result(msg["id"], {"started": True})
