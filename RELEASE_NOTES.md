@@ -1,3 +1,7 @@
+# 0.4.12
+
+- Fix broken logo and presentation images in HACS by using absolute raw GitHub image URLs in README.
+
 # 0.4.11
 
 - Email profile button now uses @.
