@@ -65,3 +65,24 @@ test('successful save hides form immediately even while polling is busy',async()
  p.querySelector=k=>k==='#email'?{value:'user@example.com'}:null;
  p._hass.connection.sendMessagePromise=async()=>({saved:true});await p._save();assert.equal(p._editingEmail,false);assert.equal(p._data.profile.email,'user@example.com');
 });
+test('phase updates appear even when only live readings change',()=>{
+ const {p,nodes}=setup();nodes['#charge-status']={};
+ p._accept({...reading(0),charge_phase:'preparing'});assert.equal(nodes['#charge-status'].textContent,'Подготовка к зарядке');
+ p._accept({...reading(5000),charge_phase:'charging'});assert.equal(nodes['#charge-status'].textContent,'Идёт зарядка');
+ p._accept({...reading(0),charge_phase:'finishing'});assert.equal(nodes['#charge-status'].textContent,'Окончание зарядки');
+ p._accept({...reading(5000),charge_phase:'charging'});assert.equal(nodes['#charge-status'].textContent,'Идёт зарядка');
+});
+test('history date and name filters combine and include midnight boundary',()=>{
+ const {p}=setup();const now=new Date(2026,9,12,12);
+ p._data={sessions:[{name:'Anna',start:new Date(2026,9,12,0).toISOString()},{name:'Boris',start:new Date(2026,9,11,12).toISOString()},{name:'Anna',start:new Date(2026,9,5,12).toISOString()},{name:'Anna',start:new Date(2026,8,30,12).toISOString()}]};
+ p._historyPeriod='day';assert.equal(p._filteredSessions(now).length,1);
+ p._historyPeriod='week';assert.equal(p._filteredSessions(now).length,2);
+ p._historyPeriod='month';assert.equal(p._filteredSessions(now).length,3);
+ p._historyName='ANNA';assert.equal(p._filteredSessions(now).length,2);
+ p._historyPeriod='all';assert.equal(p._filteredSessions(now).length,3);
+});
+test('menu is admin only and email icon is @',()=>{
+ const {p}=setup();delete p._render;p.querySelector=()=>({});p._data={...reading(),is_admin:true,can_start:true};p._render();
+ assert.match(p.innerHTML,/id="ha-menu"/);assert.match(p.innerHTML,/>@<\/button>/);
+ p._data.is_admin=false;p._render();assert.doesNotMatch(p.innerHTML,/id="ha-menu"/);
+});
