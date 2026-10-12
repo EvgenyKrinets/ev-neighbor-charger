@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="custom_components/ev_neighbor_charger/brand/logo.png" width="540" alt="EV Neighbor Charger">
+  <img src="https://raw.githubusercontent.com/EvgenyKrinets/ev-neighbor-charger/main/custom_components/ev_neighbor_charger/brand/logo.png" width="540" alt="EV Neighbor Charger">
 </p>
 
 <p align="center">A simple, accountable way to share an EV charger through Home Assistant.</p>
@@ -12,7 +12,7 @@
 </p>
 
 <p align="center">
-  <img src="docs/ev-neighbor-charger-hero.jpg" width="100%" alt="EV charging at home with a mobile control panel">
+  <img src="https://raw.githubusercontent.com/EvgenyKrinets/ev-neighbor-charger/main/docs/ev-neighbor-charger-hero.jpg" width="100%" alt="EV charging at home with a mobile control panel">
 </p>
 
 <p align="center"><em>Presentation illustration; the live control panel is rendered inside Home Assistant.</em></p>
@@ -40,7 +40,7 @@ Choose the relay, sensors, allowed Home Assistant users, tariff and shutoff rule
 ## How a charging session works
 
 <p align="center">
-  <img src="docs/charging-flow.svg" width="100%" alt="Four steps from user authorization to automatic charger shutoff and session history">
+  <img src="https://raw.githubusercontent.com/EvgenyKrinets/ev-neighbor-charger/main/docs/charging-flow.svg" width="100%" alt="Four steps from user authorization to automatic charger shutoff and session history">
 </p>
 
 ## Installation
@@ -95,7 +95,7 @@ This first version supports one charger per Home Assistant instance. Test the se
 
 ## Current version
 
-**v0.2.1** — fixes duplicate registration of the panel's JavaScript route after a failed setup or integration reload.
+**v0.4.12** — fixes images in the HACS description. Includes the @ email button, admin navigation, live charging phases and history filters from v0.4.11.
 
 ## Project links
 
