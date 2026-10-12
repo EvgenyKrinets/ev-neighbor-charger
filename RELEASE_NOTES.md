@@ -1,10 +1,8 @@
-# 0.4.10
+# 0.4.11
 
-- The email settings gear scrolls to and focuses the email field for users without an address.
-- The same action reveals the form when an address is already saved.
-
-## Previous release: 0.4.9
-
-- SMTP testing is selected by default when entering mail settings; saving alone does not send mail.
-- Show test success or failure on a dedicated result screen, including the sanitized error in the error banner.
-- Clear stale results before retries. Added result/retry regression coverage.
+- Email profile button now uses @.
+- Administrators have a Home Assistant menu button at the top left.
+- Live charging phases: preparing before the first load above the configured idle threshold, charging above it, finishing after power falls to/below it. Load history is persisted across restarts; renewed load returns to charging.
+- History filters for today, last 7 calendar days, this month and all time; admins can search by user name. Periods use the viewing device timezone and session start time.
+- History no longer truncates at 100 sessions; non-admins only receive their own sessions.
+- RU/EN/HE labels and regression checks for phases, authorization, periods and names.
