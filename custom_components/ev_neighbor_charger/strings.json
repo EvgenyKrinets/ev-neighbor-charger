@@ -56,7 +56,7 @@
       },
       "mail": {
         "title": "Outgoing email",
-        "description": "Choose a service. Server and port are configured automatically. Sign up: [Brevo](https://www.brevo.com/) or [Mailjet](https://www.mailjet.com/). Home Assistant cannot create an external account without email verification.",
+        "description": "Choose a service. Server and port are configured automatically. Sign up: [Brevo]({brevo_url}) or [Mailjet]({mailjet_url}). Home Assistant cannot create an external account without email verification.",
         "data": {
           "smtp_provider": "Email service"
         }
@@ -85,7 +85,7 @@
       },
       "mailjet_account": {
         "title": "Mailjet: keys and sender",
-        "description": "Copy API Key and Secret Key from Mailjet settings. These are not your email or sign-in password. Validate the sender email or domain in Mailjet. Server in-v3.mailjet.com, port 587 and STARTTLS are automatic. Choose Test sending, then a recipient. A blank Secret Key preserves the saved key only for the same API Key.\n\n[Mailjet API / SMTP settings](https://app.mailjet.com/account/apikeys)",
+        "description": "Copy API Key and Secret Key from Mailjet settings. These are not your email or sign-in password. Validate the sender email or domain in Mailjet. Server in-v3.mailjet.com, port 587 and STARTTLS are automatic. Choose Test sending, then a recipient. A blank Secret Key preserves the saved key only for the same API Key.\n\n[Mailjet API / SMTP settings]({mailjet_settings_url})",
         "data": {
           "smtp_enabled": "Enable email notifications and monthly reports",
           "smtp_host": "SMTP server",
