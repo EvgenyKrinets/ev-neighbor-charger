@@ -128,7 +128,7 @@ class EVNeighborChargerOptionsFlow(config_entries.OptionsFlow):
                 return await self.async_step_mail_account()
         default = data.get("smtp_provider", "custom") if data.get("smtp_enabled") else "disabled"
         schema = vol.Schema({vol.Required("smtp_provider", default=default): selector.SelectSelector(selector.SelectSelectorConfig(options=["disabled", "gmail", "yahoo", "icloud", "brevo", "mailjet", "microsoft", "custom"], translation_key="mail_provider", mode=selector.SelectSelectorMode.DROPDOWN))})
-        return self.async_show_form(step_id="mail", data_schema=schema, errors=errors)
+        return self.async_show_form(step_id="mail", data_schema=schema, errors=errors, description_placeholders={"brevo_url": "https://www.brevo.com/", "mailjet_url": "https://www.mailjet.com/"})
 
     async def async_step_mail_account(self, user_input=None):
         data = self._current()
@@ -158,7 +158,7 @@ class EVNeighborChargerOptionsFlow(config_entries.OptionsFlow):
                 vol.Required("smtp_security", default=data.get("smtp_security", "starttls")): selector.SelectSelector(selector.SelectSelectorConfig(options=["starttls", "ssl"])),
                 vol.Required("smtp_sender", default=data.get("smtp_sender", "")): selector.TextSelector(),
             })
-        return self.async_show_form(step_id="mailjet_account" if self._provider == "mailjet" else "mail_account", data_schema=vol.Schema(fields), errors=errors)
+        return self.async_show_form(step_id="mailjet_account" if self._provider == "mailjet" else "mail_account", data_schema=vol.Schema(fields), errors=errors, description_placeholders={"mailjet_settings_url": "https://app.mailjet.com/account/apikeys"})
 
     async def async_step_mailjet_account(self, user_input=None):
         self._provider = "mailjet"
