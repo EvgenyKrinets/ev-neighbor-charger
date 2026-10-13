@@ -4,9 +4,9 @@ const EV_TEXT = {
  he: ['טעינת רכב','פנוי','טעינה פעילה','המטען תפוס','התחלת טעינה','אנרגיה','עלות','הספק','היסטוריה','התחלה','סיום','משתמש','סך הכול','דוחות בדוא״ל','דוא״ל','שמירה','נשמר','יש להגדיר SMTP בהגדרות האינטגרציה לשליחת הודעות.','אין עדיין טעינות','טוען…','עדכון נכשל','התחלת טעינה נכשלה','שפת הדוחות','כיבוי אוטומטי עקב הספק נמוך','המתג כובה','הושלם','משך (דקות)','שליחת דוא״ל נכשלה; ניסיון חוזר ממתין']
 };
 const EV_EXTRA = {
- ru: {preparing:'Подготовка к зарядке',finishing:'Окончание зарядки',unavailable:'Мощность недоступна',menu:'Меню Home Assistant',period:'Период',all:'Всё время',day:'Сегодня',week:'Последние 7 дней',month:'Текущий месяц',name:'Поиск по имени'},
- en: {preparing:'Preparing to charge',finishing:'Finishing charging',unavailable:'Power unavailable',menu:'Home Assistant menu',period:'Period',all:'All time',day:'Today',week:'Last 7 days',month:'This month',name:'Search by name'},
- he: {preparing:'הכנה לטעינה',finishing:'סיום טעינה',unavailable:'ההספק אינו זמין',menu:'תפריט Home Assistant',period:'תקופה',all:'כל הזמן',day:'היום',week:'7 הימים האחרונים',month:'החודש הנוכחי',name:'חיפוש לפי שם'}
+ ru: {preparing:'Подготовка к зарядке',finishing:'Окончание зарядки',unavailable:'Мощность недоступна',menu:'Меню Home Assistant',period:'Период',all:'Всё время',day:'Сегодня',week:'Последние 7 дней',month:'Текущий месяц',year:'Текущий год',name:'Поиск по имени'},
+ en: {preparing:'Preparing to charge',finishing:'Finishing charging',unavailable:'Power unavailable',menu:'Home Assistant menu',period:'Period',all:'All time',day:'Today',week:'Last 7 days',month:'This month',year:'This year',name:'Search by name'},
+ he: {preparing:'הכנה לטעינה',finishing:'סיום טעינה',unavailable:'ההספק אינו זמין',menu:'תפריט Home Assistant',period:'תקופה',all:'כל הזמן',day:'היום',week:'7 הימים האחרונים',month:'החודש הנוכחי',year:'השנה הנוכחית',name:'חיפוש לפי שם'}
 };
 class EVNeighborChargerPanel extends HTMLElement {
  set hass(hass) {
@@ -116,13 +116,15 @@ class EVNeighborChargerPanel extends HTMLElement {
   return x[d.charge_phase]||(d.charge_phase==='charging'?t[2]:(d.active?t[2]:t[3]));
  }
  _toggleMenu(){
-  if(this._data?.is_admin)this.dispatchEvent(new CustomEvent('hass-toggle-menu',{bubbles:true,composed:true}));
+  const narrow=this.narrow??window.matchMedia?.('(max-width: 870px)').matches??false;
+  if(this._data?.is_admin)this.dispatchEvent(new CustomEvent('hass-toggle-menu',{bubbles:true,composed:true,detail:narrow?undefined:{open:true}}));
  }
  _filteredSessions(now=new Date()){
   let since=null;
   if(this._historyPeriod==='day'){since=new Date(now);since.setHours(0,0,0,0);}
   if(this._historyPeriod==='week'){since=new Date(now);since.setHours(0,0,0,0);since.setDate(since.getDate()-6);}
   if(this._historyPeriod==='month')since=new Date(now.getFullYear(),now.getMonth(),1);
+  if(this._historyPeriod==='year')since=new Date(now.getFullYear(),0,1);
   const name=(this._historyName||'').trim().toLocaleLowerCase();
   return (this._data?.sessions||[]).filter(s=>{
    const start=new Date(s.start);
@@ -165,7 +167,7 @@ class EVNeighborChargerPanel extends HTMLElement {
 
   ${d.can_start&&(!d.profile?.email||this._editingEmail)?`<section class="card"><h2 class="section-title">${t[13]}</h2><div class="form"><label>${t[14]}<br><input id="email" type="email" dir="ltr" autocomplete="email" value="${esc(this._draft??d.profile?.email??d.suggested_email??'')}"></label><button id="save">${t[15]}</button></div><p class="mail-note">${t[22]}: ${lang==='he'?'עברית':lang==='ru'?'Русский':'English'}</p>${!d.email_enabled?`<p>${t[17]}</p>`:''}${d.mail_error?`<p>${t[27]}</p>`:''}</section>`:''}
   <section class="card"><h2 class="section-title">${t[12]}</h2><div class="stats summary-stats"><div><small>${t[5]}</small><strong>${Number(d.totals?.kwh||0).toFixed(3)} kWh</strong></div><div><small>${t[6]}</small><strong>₪${Number(d.totals?.cost||0).toFixed(2)}</strong></div></div></section>
-  <section class="card"><h2 class="section-title">${t[8]}</h2><div class="history-filters"><label>${x.period}<br><select id="history-period">${['all','day','week','month'].map(k=>`<option value="${k}" ${(this._historyPeriod||'all')===k?'selected':''}>${x[k]}</option>`).join('')}</select></label>${d.is_admin?`<label>${x.name}<br><input id="history-name" type="search" value="${esc(this._historyName||'')}" placeholder="${x.name}"></label>`:''}</div><div class="scroll"><table><thead><tr><th>${t[9]}</th><th>${t[10]}</th>${d.is_admin?`<th>${t[11]}</th>`:''}<th>${t[26]}</th><th>kWh</th><th>₪</th></tr></thead><tbody id="history-rows"></tbody><tfoot id="history-total"></tfoot></table></div></section></main>`;
+  <section class="card"><h2 class="section-title">${t[8]}</h2><div class="history-filters"><label>${x.period}<br><select id="history-period">${['all','day','week','month','year'].map(k=>`<option value="${k}" ${(this._historyPeriod||'all')===k?'selected':''}>${x[k]}</option>`).join('')}</select></label>${d.is_admin?`<label>${x.name}<br><input id="history-name" type="search" value="${esc(this._historyName||'')}" placeholder="${x.name}"></label>`:''}</div><div class="scroll"><table><thead><tr><th>${t[9]}</th><th>${t[10]}</th>${d.is_admin?`<th>${t[11]}</th>`:''}<th>${t[26]}</th><th>kWh</th><th>₪</th></tr></thead><tbody id="history-rows"></tbody><tfoot id="history-total"></tfoot></table></div></section></main>`;
   this.querySelector('#language').onchange=e=>{this._lang=e.target.value;this._render();};
   const menu=this.querySelector('#ha-menu');if(menu)menu.onclick=()=>this._toggleMenu();
   const period=this.querySelector('#history-period');if(period)period.onchange=e=>{this._historyPeriod=e.target.value;this._renderHistory();};
