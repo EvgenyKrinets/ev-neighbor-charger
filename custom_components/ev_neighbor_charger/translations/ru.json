@@ -56,7 +56,7 @@
       },
       "mail": {
         "title": "Отправка почты",
-        "description": "Выберите сервис. Сервер и порт будут настроены автоматически. Регистрация: [Brevo](https://www.brevo.com/) или [Mailjet](https://www.mailjet.com/). Home Assistant не может создать внешний аккаунт без подтверждения почты.",
+        "description": "Выберите сервис. Сервер и порт будут настроены автоматически. Регистрация: [Brevo]({brevo_url}) или [Mailjet]({mailjet_url}). Home Assistant не может создать внешний аккаунт без подтверждения почты.",
         "data": {
           "smtp_provider": "Почтовый сервис"
         }
@@ -85,7 +85,7 @@
       },
       "mailjet_account": {
         "title": "Mailjet: ключи и отправитель",
-        "description": "Скопируйте API Key и Secret Key из настроек Mailjet. Это не email и не пароль входа. Подтвердите адрес отправителя или его домен в Mailjet. Сервер in-v3.mailjet.com, порт 587 и STARTTLS настроены автоматически. Выберите «Тест отправки», затем адрес получателя. Пустой Secret Key сохраняет прежний ключ только для того же API Key.\n\n[Mailjet API / SMTP settings](https://app.mailjet.com/account/apikeys)",
+        "description": "Скопируйте API Key и Secret Key из настроек Mailjet. Это не email и не пароль входа. Подтвердите адрес отправителя или его домен в Mailjet. Сервер in-v3.mailjet.com, порт 587 и STARTTLS настроены автоматически. Выберите «Тест отправки», затем адрес получателя. Пустой Secret Key сохраняет прежний ключ только для того же API Key.\n\n[Mailjet API / SMTP settings]({mailjet_settings_url})",
         "data": {
           "smtp_enabled": "Включить уведомления и ежемесячные отчёты по почте",
           "smtp_host": "SMTP-сервер",
