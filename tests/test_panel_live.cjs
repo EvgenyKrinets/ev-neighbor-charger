@@ -5,7 +5,7 @@ const {test}=require('node:test');
 const source=fs.readFileSync(require('node:path').join(__dirname,'../custom_components/ev_neighbor_charger/panel.js'),'utf8');
 function setup(){
  let Panel;const timeouts=new Map();let id=0;
- const ctx={HTMLElement:class{},document:{visibilityState:'visible',addEventListener(){},removeEventListener(){}},window:{addEventListener(){},removeEventListener(){}},setTimeout:(f)=>{timeouts.set(++id,f);return id;},clearTimeout:i=>timeouts.delete(i),setInterval:()=>1,clearInterval(){},customElements:{get:()=>false,define:(n,c)=>Panel=c}};
+ const ctx={CustomEvent:class{constructor(type,options){this.type=type;Object.assign(this,options);}},HTMLElement:class{},document:{visibilityState:'visible',addEventListener(){},removeEventListener(){}},window:{addEventListener(){},removeEventListener(){}},setTimeout:(f)=>{timeouts.set(++id,f);return id;},clearTimeout:i=>timeouts.delete(i),setInterval:()=>1,clearInterval(){},customElements:{get:()=>false,define:(n,c)=>Panel=c}};
  vm.runInNewContext(source,ctx);
  const p=new Panel();p.isConnected=true;p._hass={language:'ru',states:{},connection:{}};
  const nodes={'#live':{},'#message':{}};p.querySelector=k=>nodes[k]||null;p._render=()=>p._renderStats();
@@ -93,4 +93,17 @@ test('history footer sums only filtered sessions and clears when no matches',()=
  assert.match(nodes['#history-total'].innerHTML,/colspan="3"/);assert.match(nodes['#history-total'].innerHTML,/>120.0</);assert.match(nodes['#history-total'].innerHTML,/>12.750</);assert.match(nodes['#history-total'].innerHTML,/₪8.29/);
  p._historyName='missing';p._renderHistory();assert.match(nodes['#history-total'].innerHTML,/₪0.00/);
  p._data.is_admin=false;p._renderHistory();assert.match(nodes['#history-total'].innerHTML,/colspan="2"/);
+});
+
+test('desktop menu requests open while narrow screen preserves toggle',()=>{
+ const {p}=setup();p._data={is_admin:true};const events=[];p.dispatchEvent=e=>events.push(e);
+ p.narrow=false;p._toggleMenu();assert.equal(events[0].type,'hass-toggle-menu');assert.equal(events[0].detail.open,true);assert.equal(events[0].composed,true);
+ p.narrow=true;p._toggleMenu();assert.equal(events[1].detail,undefined);
+ p._data.is_admin=false;p._toggleMenu();assert.equal(events.length,2);
+});
+test('current year filter includes January boundary and works with name totals',()=>{
+ const {p,nodes}=setup();nodes['#history-rows']={};nodes['#history-total']={};
+ p._data={sessions:[{name:'Anna',start:new Date(2026,0,1).toISOString(),end:new Date(2026,0,1,1).toISOString(),energy_kwh:5,cost:3},{name:'Anna',start:new Date(2025,11,31).toISOString(),end:new Date(2025,11,31,1).toISOString(),energy_kwh:100,cost:60},{name:'Boris',start:new Date(2026,1,1).toISOString(),end:new Date(2026,1,1,1).toISOString(),energy_kwh:8,cost:5}]};
+ p._historyPeriod='year';assert.equal(p._filteredSessions(new Date(2026,9,13)).length,2);
+ p._historyName='anna';p._renderHistory();assert.match(nodes['#history-total'].innerHTML,/>5.000</);assert.match(nodes['#history-total'].innerHTML,/₪3.00/);
 });
