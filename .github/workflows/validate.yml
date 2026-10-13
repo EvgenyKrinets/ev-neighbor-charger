@@ -1,0 +1,35 @@
+name: Validate HACS integration
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+  schedule:
+    - cron: "15 3 * * 1"
+permissions:
+  contents: read
+jobs:
+  hacs:
+    name: HACS validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hacs/action@main
+        with:
+          category: integration
+  hassfest:
+    name: Home Assistant hassfest
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: home-assistant/actions/hassfest@master
+  tests:
+    name: Charging and frontend regression checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          python -m compileall -q custom_components
+          python -m unittest discover -s tests
+          node --check custom_components/ev_neighbor_charger/panel.js
+          node --test tests/test_panel_live.cjs
