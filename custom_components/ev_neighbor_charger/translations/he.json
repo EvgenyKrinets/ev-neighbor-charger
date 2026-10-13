@@ -53,7 +53,7 @@
       },
       "mail": {
         "title": "שליחת דוא״ל",
-        "description": "בחרו שירות. השרת והפורט יוגדרו אוטומטית. הרשמה: [Brevo](https://www.brevo.com/) או [Mailjet](https://www.mailjet.com/). Home Assistant אינו יכול ליצור חשבון חיצוני ללא אימות דוא״ל.",
+        "description": "בחרו שירות. השרת והפורט יוגדרו אוטומטית. הרשמה: [Brevo]({brevo_url}) או [Mailjet]({mailjet_url}). Home Assistant אינו יכול ליצור חשבון חיצוני ללא אימות דוא״ל.",
         "data": {
           "smtp_provider": "שירות דוא״ל"
         }
@@ -82,7 +82,7 @@
       },
       "mailjet_account": {
         "title": "Mailjet: מפתחות ושולח",
-        "description": "העתיקו API Key ו-Secret Key מהגדרות Mailjet. אלה אינם דוא״ל או סיסמת הכניסה. אמתו את השולח או הדומיין ב-Mailjet. השרת in-v3.mailjet.com, פורט 587 ו-STARTTLS מוגדרים אוטומטית. בחרו בדיקת שליחה ואז נמען. Secret Key ריק שומר את המפתח הקיים רק עבור אותו API Key.\n\n[Mailjet API / SMTP settings](https://app.mailjet.com/account/apikeys)",
+        "description": "העתיקו API Key ו-Secret Key מהגדרות Mailjet. אלה אינם דוא״ל או סיסמת הכניסה. אמתו את השולח או הדומיין ב-Mailjet. השרת in-v3.mailjet.com, פורט 587 ו-STARTTLS מוגדרים אוטומטית. בחרו בדיקת שליחה ואז נמען. Secret Key ריק שומר את המפתח הקיים רק עבור אותו API Key.\n\n[Mailjet API / SMTP settings]({mailjet_settings_url})",
         "data": {
           "smtp_enabled": "הפעלת הודעות ודוחות חודשיים בדוא״ל",
           "smtp_host": "שרת SMTP",
