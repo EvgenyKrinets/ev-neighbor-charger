@@ -12,7 +12,26 @@ concurrency:
   group: release
   cancel-in-progress: false
 jobs:
+  hacs:
+    name: HACS validation
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hacs/action@main
+        with:
+          category: integration
+  hassfest:
+    name: Home Assistant hassfest
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: home-assistant/actions/hassfest@master
   release:
+    needs: [hacs, hassfest]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
