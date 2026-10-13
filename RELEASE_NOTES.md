@@ -1,5 +1,5 @@
-# 0.4.14
+# 0.4.15
 
-- Desktop admin menu explicitly opens/docks the Home Assistant sidebar instead of hiding it. Narrow screens retain the toggle behavior.
-- Add This year history period in Russian, English and Hebrew, including the same filtered duration, energy and cost totals.
-- Regression checks cover desktop/narrow navigation and the January year boundary.
+- Prepare the repository for HACS default inclusion: maintainer, integration type and dependencies, source UI strings, MIT license and current documentation.
+- Run HACS validation and Home Assistant hassfest without ignored checks on pushes, pull requests and weekly.
+- Gate numbered releases on successful HACS validation, hassfest and the Python/frontend regression checks.
