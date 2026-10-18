@@ -1,4 +1,4 @@
-VERSION = "0.4.15"
+VERSION = "0.4.16"
 DOMAIN = "ev_neighbor_charger"
 PLATFORMS = []
 CONF_SWITCH = "switch_entity"
@@ -16,3 +16,4 @@ STORAGE_VERSION = 1
 STORAGE_KEY = f"{DOMAIN}_sessions"
 PANEL_PATH = "ev-neighbor-charger"
 PANEL_ELEMENT = "ev-neighbor-charger-panel"
+

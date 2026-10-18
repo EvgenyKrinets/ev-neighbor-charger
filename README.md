@@ -42,7 +42,7 @@ The configured threshold is used both for the live status and the shutoff timer 
 
 After starting, the panel shows **Preparing to charge** until measured power exceeds the threshold. It then shows **Charging**. When power falls to/below the threshold it shows **Finishing charging** and the idle timer runs. Renewed load cancels the timer and returns to Charging. If the power sensor is unavailable, the panel shows that fact.
 
-The same idle timer also applies while preparing, so connect the vehicle within the configured delay. Only sessions started through this integration are managed. A completed session records its user, start/end, duration, energy difference, tariff, cost and stop reason.
+For an immediate start, the same idle timer also applies while preparing, so connect the vehicle within the configured delay. For scheduled starts, automatic low-power shutoff begins only after the first load above the threshold; there is no timeout while waiting for the vehicle. Only sessions started through this integration are managed. A completed session records its user, start/end, duration, energy difference, tariff, cost and stop reason.
 
 Period filters use the viewing device's local timezone and session start date. Monthly reports use the Home Assistant timezone and session end date.
 
@@ -91,3 +91,15 @@ Update through HACS, restart Home Assistant and reopen the panel. The panel disp
 6. В истории доступны день, неделя, месяц, год и всё время; внизу — сумма времени, энергии и стоимости.
 
 Ограничение пользователей скрывает навигацию и убирает общие права на сущности, но не обеспечивает полную изоляцию всех API Home Assistant.
+
+## Scheduled charging (0.4.16)
+
+Choose **Schedule charging**, select a future date/time (shown in the device’s local timezone), and save. The station is immediately reserved and shows the owner and planned start to all allowed users. Only one reservation is supported; occupied stations cannot be reserved. The switch stays off until launch.
+
+The owner or an administrator can change/cancel the reservation or choose **Start now**. Launch runs inside Home Assistant, without an open app. Reservations survive integration reloads and HA restarts. An overdue reservation starts after HA recovers and the switch/energy sensor are ready. Launch errors are displayed to the owner/admin, the reservation is retained, and HA retries when available. Removed or disabled users cannot launch.
+
+Session time, energy and cost start at actual switch activation, excluding reservation waiting time. A scheduled session has **no timeout before the first charging load**. After load appears, the existing finishing/low-power timer applies. Scheduling does not override the vehicle’s own charging settings.
+
+**Русский:** «Запланировать зарядку» резервирует станцию сразу. Владелец или администратор может изменить время, отменить бронь или начать сейчас. Расписание сохраняется после перезапуска HA. Отдельного таймера отмены при отсутствии нагрузки нет.
+
+**עברית:** תזמון טעינה שומר את המטען עבור המשתמש מיד. המשתמש או מנהל יכולים לשנות את השעה, לבטל או להתחיל עכשיו. ההזמנה נשמרת לאחר הפעלה מחדש. אין ביטול אוטומטי בזמן ההמתנה לצריכת החשמל הראשונה.

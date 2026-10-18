@@ -71,13 +71,13 @@ async def async_setup_entry(hass: HomeAssistant, entry):
             if user.groups:
                 await hass.auth.async_update_user(user, group_ids=[])
 
-    data = {"entry": entry, "store": store, "sessions": stored.get("sessions", []), "active": stored.get("active"), "timer": None, "closing": False, "managed_users": managed_users,
+    data = {"entry": entry, "store": store, "sessions": stored.get("sessions", []), "active": stored.get("active"), "reservation": stored.get("reservation"), "schedule_error": None, "timer": None, "closing": False, "managed_users": managed_users,
             "profiles": stored.get("profiles", {}), "outbox": stored.get("outbox", []), "monthly": stored.get("monthly", []), "mail_error": None, "mail_lock": asyncio.Lock(), "starting": False, "stopped": False}
     domain_data = hass.data.setdefault(DOMAIN, {})
     domain_data[entry.entry_id] = data
 
     async def persist():
-        await store.async_save({key: data[key] for key in ("sessions", "active", "managed_users", "profiles", "outbox", "monthly")})
+        await store.async_save({key: data[key] for key in ("sessions", "active", "reservation", "managed_users", "profiles", "outbox", "monthly")})
         async_dispatcher_send(hass, f"{DOMAIN}_updated")
 
     async def deliver():
@@ -174,7 +174,7 @@ async def async_setup_entry(hass: HomeAssistant, entry):
             data["active"]["has_load"] = True
             hass.async_create_task(persist())
         below = power is not None and power <= float(settings.get(CONF_IDLE_W, 100))
-        if below and data["timer"] is None:
+        if below and data["timer"] is None and (data["active"].get("has_load") or not data["active"].get("scheduled")):
             data["timer"] = async_call_later(hass, int(settings.get(CONF_IDLE_SECONDS, 120)), low_power_callback)
         elif not below and data["timer"] is not None:
             data["timer"]()
@@ -196,7 +196,7 @@ async def async_setup_entry(hass: HomeAssistant, entry):
         if power is not None and power > float(settings.get(CONF_IDLE_W, 100)):
             data["active"]["has_load"] = True
             await persist()
-        if power is not None and power <= float(settings.get(CONF_IDLE_W, 100)):
+        if power is not None and power <= float(settings.get(CONF_IDLE_W, 100)) and (data["active"].get("has_load") or not data["active"].get("scheduled")):
             data["timer"] = async_call_later(hass, int(settings.get(CONF_IDLE_SECONDS, 120)), low_power_callback)
 
     @callback
@@ -218,7 +218,8 @@ async def async_setup_entry(hass: HomeAssistant, entry):
         allowed = settings.get(CONF_USERS, [])
         can_start = is_admin or bool(user and user.id in allowed)
         session = data["active"]
-        phase = "available"
+        reservation = data.get("reservation")
+        phase = "scheduled" if reservation else "available"
         if session:
             if current_power is None:
                 phase = "unavailable"
@@ -226,7 +227,7 @@ async def async_setup_entry(hass: HomeAssistant, entry):
                 phase = "charging"
             else:
                 phase = "finishing" if session.get("has_load") else "preparing"
-        return {"active": active, "sessions": list(reversed(visible)), "totals": totals, "charge_phase": phase, "power_w": current_power, "power_updated": power_state.last_updated.isoformat() if power_state else None, "energy_updated": energy_state.last_updated.isoformat() if energy_state else None, "energy_kwh": current_energy, "busy": bool(data["active"]), "owner": data["active"].get("name") if data["active"] else None, "is_admin": is_admin, "can_start": can_start, "rate": float(settings.get(CONF_RATE, 0)), "version": VERSION, "suggested_email": suggested_email(user), "profile": data["profiles"].get(user.id, {}) if user else {}, "entities": {"power": settings[CONF_POWER], "energy": settings[CONF_ENERGY]}, "email_enabled": bool(settings.get("smtp_enabled")), "mail_error": data["mail_error"] if is_admin else None}
+        return {"active": active, "sessions": list(reversed(visible)), "totals": totals, "charge_phase": phase, "power_w": current_power, "power_updated": power_state.last_updated.isoformat() if power_state else None, "energy_updated": energy_state.last_updated.isoformat() if energy_state else None, "energy_kwh": current_energy, "reservation": reservation, "schedule_error": data.get("schedule_error") if is_admin or (reservation and user and reservation["user_id"] == user.id) else None, "can_manage_reservation": bool(reservation and user and (is_admin or reservation["user_id"] == user.id)), "busy": bool(data["active"] or reservation), "owner": (data["active"] or reservation or {}).get("name"), "is_admin": is_admin, "can_start": can_start, "rate": float(settings.get(CONF_RATE, 0)), "version": VERSION, "suggested_email": suggested_email(user), "profile": data["profiles"].get(user.id, {}) if user else {}, "entities": {"power": settings[CONF_POWER], "energy": settings[CONF_ENERGY]}, "email_enabled": bool(settings.get("smtp_enabled")), "mail_error": data["mail_error"] if is_admin else None}
 
     @callback
     def authorized(connection, msg):
@@ -289,50 +290,129 @@ async def async_setup_entry(hass: HomeAssistant, entry):
         send_update()
 
 
-    @websocket_api.websocket_command({"type": f"{DOMAIN}/start"})
-    @websocket_api.async_response
-    async def ws_start(hass, connection, msg):
-        user = connection.user
-        uid = user.id if user else None
-        allowed = settings.get(CONF_USERS, [])
-        if not user or (not user.is_admin and uid not in allowed):
-            connection.send_error(msg["id"], websocket_api.ERR_UNAUTHORIZED, "User is not allowed to start charging")
-            return
-        if data["active"] or data["starting"]:
-            connection.send_error(msg["id"], websocket_api.ERR_HOME_ASSISTANT_ERROR, "Charger is busy")
-            return
+    async def start_session(user_id, name, scheduled=False):
         switch_state = hass.states.get(settings[CONF_SWITCH])
         energy_state = hass.states.get(settings[CONF_ENERGY])
         if not switch_state or switch_state.state != "off" or not energy_state:
-            connection.send_error(msg["id"], websocket_api.ERR_HOME_ASSISTANT_ERROR, "Charger must be off and energy sensor available")
-            return
+            raise ValueError("Charger must be off and energy sensor available")
         start_kwh = _num(energy_state, "kwh")
         if start_kwh is None:
-            connection.send_error(msg["id"], websocket_api.ERR_HOME_ASSISTANT_ERROR, "Energy sensor has no numeric reading")
-            return
+            raise ValueError("Energy sensor has no numeric reading")
+        reservation = data.get("reservation")
         data["starting"] = True
-        data["active"] = {"user_id": uid, "name": user.name or user.id, "start": datetime.now(timezone.utc).isoformat(), "start_kwh": start_kwh, "rate": float(settings.get(CONF_RATE, 0))}
-        await persist()
+        data["active"] = {"user_id": user_id, "name": name, "start": datetime.now(timezone.utc).isoformat(), "start_kwh": start_kwh, "rate": float(settings.get(CONF_RATE, 0)), "scheduled": scheduled}
+        data["reservation"] = None
         try:
+            await persist()
             await hass.services.async_call("switch", "turn_on", {"entity_id": settings[CONF_SWITCH]}, blocking=True, context=Context())
         except Exception:
             data["active"] = None
+            data["reservation"] = reservation
             await persist()
-            data["starting"] = False
             raise
-        data["starting"] = False
+        finally:
+            data["starting"] = False
+        data["schedule_error"] = None
+        data["schedule_retry_after"] = None
         if data["active"]:
             queue_mail("start", data["active"])
+            power_state = hass.states.get(settings[CONF_POWER])
+            power = _num(power_state, "w") if power_state else None
+            if power is not None and power > float(settings.get(CONF_IDLE_W, 100)):
+                data["active"]["has_load"] = True
+            if not scheduled and power is not None and power <= float(settings.get(CONF_IDLE_W, 100)) and data["timer"] is None:
+                data["timer"] = async_call_later(hass, int(settings.get(CONF_IDLE_SECONDS, 120)), low_power_callback)
             await persist()
             hass.async_create_task(deliver())
-        power_state = hass.states.get(settings[CONF_POWER])
-        power = _num(power_state, "w") if power_state else None
-        if data["active"] and power is not None and power > float(settings.get(CONF_IDLE_W, 100)):
-            data["active"]["has_load"] = True
-            await persist()
-        if power is not None and power <= float(settings.get(CONF_IDLE_W, 100)):
-            data["timer"] = async_call_later(hass, int(settings.get(CONF_IDLE_SECONDS, 120)), low_power_callback)
+
+    @websocket_api.websocket_command({"type": f"{DOMAIN}/start"})
+    @websocket_api.async_response
+    async def ws_start(hass, connection, msg):
+        if not authorized(connection, msg):
+            return
+        reservation = data.get("reservation")
+        user = connection.user
+        if data["active"] or data["starting"] or (reservation and not (user.is_admin or reservation["user_id"] == user.id)):
+            connection.send_error(msg["id"], "busy", "Charger is busy")
+            return
+        try:
+            await start_session(reservation["user_id"] if reservation else user.id, reservation["name"] if reservation else user.name or user.id, bool(reservation))
+        except Exception as err:
+            connection.send_error(msg["id"], "start_failed", str(err))
+            return
         connection.send_result(msg["id"], {"started": True})
+
+    @websocket_api.websocket_command({"type": f"{DOMAIN}/schedule", vol.Required("start_at"): str})
+    @websocket_api.async_response
+    async def ws_schedule(hass, connection, msg):
+        if not authorized(connection, msg):
+            return
+        user = connection.user
+        reservation = data.get("reservation")
+        if data["active"] or data["starting"] or (reservation and not (user.is_admin or reservation["user_id"] == user.id)):
+            connection.send_error(msg["id"], "busy", "Charger is busy")
+            return
+        try:
+            start_at = datetime.fromisoformat(msg["start_at"])
+            if start_at.tzinfo is None or start_at <= datetime.now(timezone.utc):
+                raise ValueError()
+        except (ValueError, TypeError, OverflowError):
+            connection.send_error(msg["id"], "invalid_time", "Choose a future date and time")
+            return
+        switch_state = hass.states.get(settings[CONF_SWITCH])
+        if not switch_state or switch_state.state != "off":
+            connection.send_error(msg["id"], "busy", "Charger must be off")
+            return
+        data["reservation"] = {"user_id": reservation["user_id"] if reservation else user.id, "name": reservation["name"] if reservation else user.name or user.id, "start_at": start_at.astimezone(timezone.utc).isoformat()}
+        data["schedule_error"] = None
+        data["schedule_retry_after"] = None
+        await persist()
+        connection.send_result(msg["id"], {"scheduled": True})
+
+    @websocket_api.websocket_command({"type": f"{DOMAIN}/cancel_schedule"})
+    @websocket_api.async_response
+    async def ws_cancel_schedule(hass, connection, msg):
+        if not authorized(connection, msg):
+            return
+        reservation = data.get("reservation")
+        if data["starting"] or (reservation and not (connection.user.is_admin or reservation["user_id"] == connection.user.id)):
+            connection.send_error(msg["id"], "busy", "Reservation belongs to another user or is starting")
+            return
+        data["reservation"] = None
+        data["schedule_error"] = None
+        data["schedule_retry_after"] = None
+        await persist()
+        connection.send_result(msg["id"], {"cancelled": True})
+
+    async def scheduled_tick(_now=None):
+        reservation = data.get("reservation")
+        if data["stopped"] or data["starting"] or data["active"] or not reservation:
+            return
+        if datetime.fromisoformat(reservation["start_at"]) > datetime.now(timezone.utc):
+            return
+        retry_after = data.get("schedule_retry_after")
+        if retry_after and retry_after > datetime.now(timezone.utc):
+            return
+        # Claim before resolving the user to prevent concurrent starts/edits.
+        data["starting"] = True
+        try:
+            user = await hass.auth.async_get_user(reservation["user_id"])
+            if data["stopped"]:
+                return
+            if not user or not user.is_active or (not user.is_admin and user.id not in settings.get(CONF_USERS, [])):
+                raise ValueError("Reservation owner is no longer authorized")
+            await start_session(reservation["user_id"], reservation["name"], True)
+        except Exception as err:
+            data["schedule_error"] = str(err)
+            data["schedule_retry_after"] = datetime.now(timezone.utc) + timedelta(seconds=30)
+            await persist()
+        finally:
+            data["starting"] = False
+
+    for command in (ws_schedule, ws_cancel_schedule):
+        websocket_api.async_register_command(hass, command)
+    data["unsubs"].append(async_track_time_interval(hass, scheduled_tick, timedelta(seconds=1)))
+    hass.async_create_task(scheduled_tick())
 
     @websocket_api.websocket_command({"type": f"{DOMAIN}/profile", vol.Required("email"): str, vol.Required("language"): vol.In(["ru", "en", "he"])})
     @websocket_api.async_response
@@ -431,3 +511,4 @@ async def async_remove_entry(hass: HomeAssistant, entry):
             await hass.auth.async_update_user(user, group_ids=group_ids)
     stored["managed_users"] = {}
     await Store(hass, STORAGE_VERSION, STORAGE_KEY).async_save(stored)
+

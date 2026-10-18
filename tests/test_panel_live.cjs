@@ -107,3 +107,15 @@ test('current year filter includes January boundary and works with name totals',
  p._historyPeriod='year';assert.equal(p._filteredSessions(new Date(2026,9,13)).length,2);
  p._historyName='anna';p._renderHistory();assert.match(nodes['#history-total'].innerHTML,/>5.000</);assert.match(nodes['#history-total'].innerHTML,/₪3.00/);
 });
+test('scheduled state shows reservation and owner controls only to owner/admin',()=>{
+ const {p}=setup();delete p._render;p.querySelector=()=>({});
+ p._data={...reading(),active:null,charge_phase:'scheduled',reservation:{user_id:'one',name:'Neighbor',start_at:'2026-10-19T20:00:00Z'},can_manage_reservation:true};p._render();
+ assert.match(p.innerHTML,/Зарядка запланирована/);assert.match(p.innerHTML,/id="start-now"/);assert.match(p.innerHTML,/id="cancel-schedule"/);assert.doesNotMatch(p.innerHTML,/id="start"/);
+ p._data.can_manage_reservation=false;p._render();assert.doesNotMatch(p.innerHTML,/id="start-now"|id="edit-schedule"|id="cancel-schedule"/);
+});
+test('schedule sends UTC timestamp, rejects past time, and cancel needs no date',async()=>{
+ const {p}=setup();const sent=[];p._refresh=async()=>{};p._hass.connection.sendMessagePromise=async msg=>sent.push(msg);
+ p._scheduleDraft='2000-01-01T10:00';await p._scheduleAction();assert.equal(sent.length,0);
+ p._scheduleDraft='2099-01-01T10:00';await p._scheduleAction();assert.equal(sent[0].type,'ev_neighbor_charger/schedule');assert.equal(sent[0].start_at,new Date(p._scheduleDraft).toISOString());
+ p._scheduleDraft='';await p._scheduleAction(true);assert.equal(sent[1].type,'ev_neighbor_charger/cancel_schedule');
+});

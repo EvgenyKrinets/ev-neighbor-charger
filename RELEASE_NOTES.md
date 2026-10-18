@@ -1,5 +1,8 @@
-# 0.4.15
+# EV Neighbor Charger 0.4.16
 
-- Prepare the repository for HACS default inclusion: maintainer, integration type and dependencies, source UI strings, MIT license and current documentation.
-- Run HACS validation and Home Assistant hassfest without ignored checks on pushes, pull requests and weekly.
-- Gate numbered releases on successful HACS validation, hassfest and the Python/frontend regression checks.
+- Scheduled charging with immediate reservation, owner and planned start display.
+- Owner/admin can edit, cancel or start now. Reservations survive HA restarts and reloads.
+- Launch occurs in HA; the app can be closed. Errors are displayed and retried.
+- Accounting begins at activation, excluding reservation waiting time.
+- No no-load waiting timeout for scheduled sessions; the existing end timer applies after first load.
+- Russian, English and Hebrew UI and documentation updated.
