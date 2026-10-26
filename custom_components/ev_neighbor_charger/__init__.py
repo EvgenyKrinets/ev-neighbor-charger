@@ -47,6 +47,9 @@ def _num(state, unit):
 
 async def async_setup_entry(hass: HomeAssistant, entry):
     settings = _settings(entry)
+    # Normalize the legacy setup title without changing the config entry ID.
+    if entry.title == "EV Neighbor Charger":
+        hass.config_entries.async_update_entry(entry, title="EV Charger")
     store = Store(hass, STORAGE_VERSION, STORAGE_KEY)
     stored = await store.async_load() or {"sessions": [], "active": None}
     managed_users = stored.get("managed_users", {})
@@ -190,6 +193,11 @@ async def async_setup_entry(hass: HomeAssistant, entry):
         async_track_state_change_event(hass, [settings[CONF_POWER]], power_changed),
         async_track_state_change_event(hass, [settings[CONF_SWITCH]], switch_changed),
     ]
+    # A restored session is ours only while the actual switch remains on.
+    # Do not mistake unknown/unavailable states for an external start.
+    restored_switch = hass.states.get(settings[CONF_SWITCH])
+    if data["active"] and restored_switch and restored_switch.state == "off":
+        await close_session("switch_off")
     if data["active"]:
         # Recover a session after a restart and resume its idle timer if needed.
         power = _num(hass.states.get(settings[CONF_POWER]), "w") if hass.states.get(settings[CONF_POWER]) else None
@@ -219,7 +227,9 @@ async def async_setup_entry(hass: HomeAssistant, entry):
         can_start = is_admin or bool(user and user.id in allowed)
         session = data["active"]
         reservation = data.get("reservation")
-        phase = "scheduled" if reservation else "available"
+        switch_state = hass.states.get(settings[CONF_SWITCH])
+        external_control = bool(switch_state and switch_state.state == "on" and not session)
+        phase = "external" if external_control else ("scheduled" if reservation else "available")
         if session:
             if current_power is None:
                 phase = "unavailable"
@@ -227,7 +237,7 @@ async def async_setup_entry(hass: HomeAssistant, entry):
                 phase = "charging"
             else:
                 phase = "finishing" if session.get("has_load") else "preparing"
-        return {"active": active, "sessions": list(reversed(visible)), "totals": totals, "charge_phase": phase, "power_w": current_power, "power_updated": power_state.last_updated.isoformat() if power_state else None, "energy_updated": energy_state.last_updated.isoformat() if energy_state else None, "energy_kwh": current_energy, "reservation": reservation, "schedule_error": data.get("schedule_error") if is_admin or (reservation and user and reservation["user_id"] == user.id) else None, "can_manage_reservation": bool(reservation and user and (is_admin or reservation["user_id"] == user.id)), "busy": bool(data["active"] or reservation), "owner": (data["active"] or reservation or {}).get("name"), "is_admin": is_admin, "can_start": can_start, "rate": float(settings.get(CONF_RATE, 0)), "version": VERSION, "suggested_email": suggested_email(user), "profile": data["profiles"].get(user.id, {}) if user else {}, "entities": {"power": settings[CONF_POWER], "energy": settings[CONF_ENERGY]}, "email_enabled": bool(settings.get("smtp_enabled")), "mail_error": data["mail_error"] if is_admin else None}
+        return {"active": active, "sessions": list(reversed(visible)), "totals": totals, "charge_phase": phase, "power_w": current_power, "power_updated": power_state.last_updated.isoformat() if power_state else None, "energy_updated": energy_state.last_updated.isoformat() if energy_state else None, "energy_kwh": current_energy, "reservation": reservation, "schedule_error": data.get("schedule_error") if is_admin or (reservation and user and reservation["user_id"] == user.id) else None, "can_manage_reservation": bool(reservation and user and (is_admin or reservation["user_id"] == user.id)), "busy": bool(data["active"] or reservation or external_control), "external_control": external_control, "owner": (data["active"] or reservation or {}).get("name"), "is_admin": is_admin, "can_start": can_start, "rate": float(settings.get(CONF_RATE, 0)), "version": VERSION, "suggested_email": suggested_email(user), "profile": data["profiles"].get(user.id, {}) if user else {}, "entities": {"power": settings[CONF_POWER], "energy": settings[CONF_ENERGY]}, "email_enabled": bool(settings.get("smtp_enabled")), "mail_error": data["mail_error"] if is_admin else None}
 
     @callback
     def authorized(connection, msg):
@@ -332,7 +342,8 @@ async def async_setup_entry(hass: HomeAssistant, entry):
             return
         reservation = data.get("reservation")
         user = connection.user
-        if data["active"] or data["starting"] or (reservation and not (user.is_admin or reservation["user_id"] == user.id)):
+        switch_state = hass.states.get(settings[CONF_SWITCH])
+        if data["active"] or data["starting"] or not switch_state or switch_state.state != "off" or (reservation and not (user.is_admin or reservation["user_id"] == user.id)):
             connection.send_error(msg["id"], "busy", "Charger is busy")
             return
         try:
@@ -349,7 +360,8 @@ async def async_setup_entry(hass: HomeAssistant, entry):
             return
         user = connection.user
         reservation = data.get("reservation")
-        if data["active"] or data["starting"] or (reservation and not (user.is_admin or reservation["user_id"] == user.id)):
+        switch_state = hass.states.get(settings[CONF_SWITCH])
+        if data["active"] or data["starting"] or (switch_state and switch_state.state == "on") or (reservation and not (user.is_admin or reservation["user_id"] == user.id)):
             connection.send_error(msg["id"], "busy", "Charger is busy")
             return
         try:
