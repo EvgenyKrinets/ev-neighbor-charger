@@ -119,3 +119,21 @@ test('schedule sends UTC timestamp, rejects past time, and cancel needs no date'
  p._scheduleDraft='2099-01-01T10:00';await p._scheduleAction();assert.equal(sent[0].type,'ev_neighbor_charger/schedule');assert.equal(sent[0].start_at,new Date(p._scheduleDraft).toISOString());
  p._scheduleDraft='';await p._scheduleAction(true);assert.equal(sent[1].type,'ev_neighbor_charger/cancel_schedule');
 });
+
+test('integration gear is administrator-only and navigates to integration settings',()=>{
+ const {p}=setup();delete p._render;p.querySelector=()=>({});
+ p._data={...reading(),is_admin:true,config_entry_id:'entry123',can_start:true};p._render();
+ assert.match(p.innerHTML,/id="integration-settings"/);
+ assert.match(p.innerHTML,/Настройки интеграции/);
+ let url='';p._hass.navigate=u=>{url=u;};
+ p._openIntegrationSettings();assert.equal(url,'/config/integrations/integration/ev_neighbor_charger');
+ p._data.is_admin=false;p._render();
+ assert.doesNotMatch(p.innerHTML,/id="integration-settings"/);
+ p._openIntegrationSettings();assert.equal(url,'/config/integrations/integration/ev_neighbor_charger');
+});
+test('external charging label is live and start is unavailable',()=>{
+ const {p}=setup();delete p._render;p.querySelector=()=>({});
+ p._data={...reading(),active:null,owner:null,busy:true,external_control:true,charge_phase:'external'};
+ p._render();assert.match(p.innerHTML,/Используется другим приложением/);
+ assert.doesNotMatch(p.innerHTML,/id="start"/);
+});
