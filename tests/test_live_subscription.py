@@ -48,7 +48,7 @@ class SubscriptionTests(unittest.TestCase):
         def schedule(coro): saved.append(True);coro.close()
         hass=SimpleNamespace(states=SimpleNamespace(get=lambda key:state),async_create_task=schedule)
         ns={'data':data,'settings':settings,'hass':hass,'persist':persist,'_num':lambda s,unit:None if s.state=='unavailable' else float(s.state),
-            'CONF_POWER':'power','CONF_ENERGY':'energy','CONF_USERS':'users','CONF_RATE':'rate','CONF_IDLE_W':'idle','CONF_IDLE_SECONDS':'delay',
+            'CONF_POWER':'power','CONF_ENERGY':'energy','CONF_SWITCH':'switch','CONF_USERS':'users','CONF_RATE':'rate','CONF_IDLE_W':'idle','CONF_IDLE_SECONDS':'delay',
             'VERSION':'test','suggested_email':lambda u:None,'low_power_callback':lambda now:None,'async_call_later':lambda *args:lambda:None}
         exec(compile(ast.Module(body=functions,type_ignores=[]),str(SOURCE),'exec'),ns)
         user=SimpleNamespace(id='neighbor',is_admin=False)
@@ -62,4 +62,19 @@ class SubscriptionTests(unittest.TestCase):
         self.assertEqual(ns['snapshot'](user)['charge_phase'],'charging')
         state.state='unavailable';self.assertEqual(ns['snapshot'](user)['charge_phase'],'unavailable')
         self.assertEqual(len(ns['snapshot'](user)['sessions']),150)
+        # External ON must claim the station without claiming a charge session.
+        data['active'] = None
+        switch_on = SimpleNamespace(state='on',last_updated=datetime.now(timezone.utc))
+        hass.states.get = lambda key: switch_on if key == 'switch.charger' else state
+        settings['switch'] = 'switch.charger'
+        external = ns['snapshot'](user)
+        self.assertEqual(external['charge_phase'], 'external')
+        self.assertTrue(external['external_control'])
+        self.assertTrue(external['busy'])
+        self.assertIsNone(external['active'])
+        switch_on.state = 'off'
+        available = ns['snapshot'](user)
+        self.assertFalse(available['external_control'])
+        self.assertFalse(available['busy'])
+        self.assertEqual(available['charge_phase'], 'available')
         user.is_admin=True;self.assertEqual(len(ns['snapshot'](user)['sessions']),151)
