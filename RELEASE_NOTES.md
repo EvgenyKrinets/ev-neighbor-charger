@@ -1,8 +1,8 @@
-# EV Neighbor Charger 0.4.16
+# EV Charger 0.4.18
 
-- Scheduled charging with immediate reservation, owner and planned start display.
-- Owner/admin can edit, cancel or start now. Reservations survive HA restarts and reloads.
-- Launch occurs in HA; the app can be closed. Errors are displayed and retried.
-- Accounting begins at activation, excluding reservation waiting time.
-- No no-load waiting timeout for scheduled sessions; the existing end timer applies after first load.
-- Russian, English and Hebrew UI and documentation updated.
+- Add an administrator-only **⚙ integration settings** shortcut to the panel. Home Assistant configuration remains managed by its native **Configure** flow, while **@** still opens the individual email profile.
+- Recognize an externally switched-on charging station, show **In use by another application** in RU/EN/HE, and prevent overlapping starts without shutting down or billing the external charging session.
+- Keep reservation, scheduled charging, delayed power-detection behavior and existing low-power shutoff rules; never add the unwanted 30-minute pre-load timer.
+- Align display names with **EV Charger** without changing the stored domain, installation identity, history or users.
+- Refresh documentation and setup guidance, including the difference between Helpers and Integrations and safe migration from 0.4.16.
+- Regression tests for the administrator settings shortcut, external charger state and existing scheduling.
