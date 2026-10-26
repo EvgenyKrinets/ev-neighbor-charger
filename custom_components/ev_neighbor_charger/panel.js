@@ -4,9 +4,9 @@ const EV_TEXT = {
  he: ['טעינת רכב','פנוי','טעינה פעילה','המטען תפוס','התחלת טעינה','אנרגיה','עלות','הספק','היסטוריה','התחלה','סיום','משתמש','סך הכול','דוחות בדוא״ל','דוא״ל','שמירה','נשמר','יש להגדיר SMTP בהגדרות האינטגרציה לשליחת הודעות.','אין עדיין טעינות','טוען…','עדכון נכשל','התחלת טעינה נכשלה','שפת הדוחות','כיבוי אוטומטי עקב הספק נמוך','המתג כובה','הושלם','משך (דקות)','שליחת דוא״ל נכשלה; ניסיון חוזר ממתין']
 };
 const EV_EXTRA = {
- ru: {scheduled:'Зарядка запланирована',schedule:'Запланировать зарядку',when:'Дата и время запуска',confirm:'Сохранить время',cancel:'Отменить бронь',edit:'Изменить время',now:'Начать сейчас',close:'Закрыть',future:'Выбери дату и время в будущем',local:'Время на этом устройстве',preparing:'Подготовка к зарядке',finishing:'Окончание зарядки',unavailable:'Мощность недоступна',menu:'Меню Home Assistant',period:'Период',all:'Всё время',day:'Сегодня',week:'Последние 7 дней',month:'Текущий месяц',year:'Текущий год',name:'Поиск по имени'},
- en: {scheduled:'Charging scheduled',schedule:'Schedule charging',when:'Start date and time',confirm:'Save time',cancel:'Cancel reservation',edit:'Change time',now:'Start now',close:'Close',future:'Choose a future date and time',local:'Time on this device',preparing:'Preparing to charge',finishing:'Finishing charging',unavailable:'Power unavailable',menu:'Home Assistant menu',period:'Period',all:'All time',day:'Today',week:'Last 7 days',month:'This month',year:'This year',name:'Search by name'},
- he: {scheduled:'טעינה מתוזמנת',schedule:'תזמון טעינה',when:'תאריך ושעת התחלה',confirm:'שמירת השעה',cancel:'ביטול הזמנה',edit:'שינוי השעה',now:'התחלה עכשיו',close:'סגירה',future:'יש לבחור תאריך ושעה בעתיד',local:'השעה במכשיר זה',preparing:'הכנה לטעינה',finishing:'סיום טעינה',unavailable:'ההספק אינו זמין',menu:'תפריט Home Assistant',period:'תקופה',all:'כל הזמן',day:'היום',week:'7 הימים האחרונים',month:'החודש הנוכחי',year:'השנה הנוכחית',name:'חיפוש לפי שם'}
+ ru: {scheduled:'Зарядка запланирована',schedule:'Запланировать зарядку',when:'Дата и время запуска',confirm:'Сохранить время',cancel:'Отменить бронь',edit:'Изменить время',now:'Начать сейчас',close:'Закрыть',future:'Выбери дату и время в будущем',local:'Время на этом устройстве',preparing:'Подготовка к зарядке',finishing:'Окончание зарядки',unavailable:'Мощность недоступна',menu:'Меню Home Assistant',period:'Период',all:'Всё время',day:'Сегодня',week:'Последние 7 дней',month:'Текущий месяц',year:'Текущий год',name:'Поиск по имени',external:'Используется другим приложением'},
+ en: {scheduled:'Charging scheduled',schedule:'Schedule charging',when:'Start date and time',confirm:'Save time',cancel:'Cancel reservation',edit:'Change time',now:'Start now',close:'Close',future:'Choose a future date and time',local:'Time on this device',preparing:'Preparing to charge',finishing:'Finishing charging',unavailable:'Power unavailable',menu:'Home Assistant menu',period:'Period',all:'All time',day:'Today',week:'Last 7 days',month:'This month',year:'This year',name:'Search by name',external:'In use by another application'},
+ he: {scheduled:'טעינה מתוזמנת',schedule:'תזמון טעינה',when:'תאריך ושעת התחלה',confirm:'שמירת השעה',cancel:'ביטול הזמנה',edit:'שינוי השעה',now:'התחלה עכשיו',close:'סגירה',future:'יש לבחור תאריך ושעה בעתיד',local:'השעה במכשיר זה',preparing:'הכנה לטעינה',finishing:'סיום טעינה',unavailable:'ההספק אינו זמין',menu:'תפריט Home Assistant',period:'תקופה',all:'כל הזמן',day:'היום',week:'7 הימים האחרונים',month:'החודש הנוכחי',year:'השנה הנוכחית',name:'חיפוש לפי שם',external:'בשימוש על ידי יישום אחר'}
 };
 class EVNeighborChargerPanel extends HTMLElement {
  set hass(hass) {
@@ -57,7 +57,7 @@ class EVNeighborChargerPanel extends HTMLElement {
  }
  _accept(d){
   if(!this._data&&!this._lang&&d.profile?.language)this._lang=d.profile.language;
-  const structural=x=>JSON.stringify([x?.reservation,x?.can_manage_reservation,x?.schedule_error,x?.active?.start,x?.owner,x?.active?.name,x?.busy,x?.sessions,x?.profile,x?.email_enabled,x?.mail_error,x?.can_start,x?.is_admin,x?.version]);
+  const structural=x=>JSON.stringify([x?.reservation,x?.can_manage_reservation,x?.schedule_error,x?.active?.start,x?.owner,x?.active?.name,x?.busy,x?.external_control,x?.charge_phase,x?.sessions,x?.profile,x?.email_enabled,x?.mail_error,x?.can_start,x?.is_admin,x?.version]);
   const changed=structural(d)!==structural(this._data);
   this._data=d;this._error='';
   if(changed||!this.querySelector('#live'))this._render();else this._renderStats();
@@ -131,6 +131,7 @@ class EVNeighborChargerPanel extends HTMLElement {
   const d=this._data,t=EV_TEXT[this._language()],x=EV_EXTRA[this._language()];
   if(!d)return t[19];
   if(this._starting)return x.preparing;
+  if(d.external_control)return x.external;
   if(!d.busy)return t[1];
   return x[d.charge_phase]||(d.charge_phase==='charging'?t[2]:(d.active?t[2]:t[3]));
  }
