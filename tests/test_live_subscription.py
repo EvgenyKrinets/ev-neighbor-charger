@@ -47,7 +47,7 @@ class SubscriptionTests(unittest.TestCase):
         async def persist(): pass
         def schedule(coro): saved.append(True);coro.close()
         hass=SimpleNamespace(states=SimpleNamespace(get=lambda key:state),async_create_task=schedule)
-        ns={'data':data,'settings':settings,'hass':hass,'persist':persist,'_num':lambda s,unit:None if s.state=='unavailable' else float(s.state),
+        ns={'data':data,'settings':settings,'entry':SimpleNamespace(entry_id='test-entry'),'hass':hass,'persist':persist,'_num':lambda s,unit:None if s.state=='unavailable' else float(s.state),
             'CONF_POWER':'power','CONF_ENERGY':'energy','CONF_SWITCH':'switch','CONF_USERS':'users','CONF_RATE':'rate','CONF_IDLE_W':'idle','CONF_IDLE_SECONDS':'delay',
             'VERSION':'test','suggested_email':lambda u:None,'low_power_callback':lambda now:None,'async_call_later':lambda *args:lambda:None}
         exec(compile(ast.Module(body=functions,type_ignores=[]),str(SOURCE),'exec'),ns)
