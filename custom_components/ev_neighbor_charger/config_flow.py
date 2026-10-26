@@ -69,7 +69,7 @@ class EVNeighborChargerConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             elif power.attributes.get("unit_of_measurement") not in ("W", "kW"):
                 errors[CONF_POWER] = "power_unit"
             if not errors:
-                return self.async_create_entry(title="EV Neighbor Charger", data=user_input)
+                return self.async_create_entry(title="EV Charger", data=user_input)
         users_selector = await _allowed_users_selector(self.hass)
         schema = vol.Schema({
             vol.Required(CONF_SWITCH): selector.EntitySelector(selector.EntitySelectorConfig(domain="switch")),
