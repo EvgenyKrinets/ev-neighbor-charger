@@ -1,8 +1,8 @@
 <p align="center"><img src="https://raw.githubusercontent.com/EvgenyKrinets/ev-neighbor-charger/main/custom_components/ev_neighbor_charger/brand/logo.png" width="540" alt="EV Neighbor Charger"></p>
 
-# EV Neighbor Charger
+# EV Charger
 
-Share one EV charger through Home Assistant. Each allowed user starts their own session and sees energy, cost and history. Setup, access, automatic shutoff and email delivery are configured in the UI.
+Share one EV charger through Home Assistant. The Home Assistant domain remains `ev_neighbor_charger` to preserve existing installations. Each allowed user starts their own session and sees energy, cost and history. Setup, access, automatic shutoff and email delivery are configured in the UI.
 
 [![HACS validation](https://github.com/EvgenyKrinets/ev-neighbor-charger/actions/workflows/validate.yml/badge.svg)](https://github.com/EvgenyKrinets/ev-neighbor-charger/actions/workflows/validate.yml)
 [![Release](https://img.shields.io/github/v/release/EvgenyKrinets/ev-neighbor-charger)](https://github.com/EvgenyKrinets/ev-neighbor-charger/releases)
@@ -29,12 +29,24 @@ The application for inclusion in the default HACS catalogue is being prepared. U
 
 1. Open **HACS → ⋮ → Custom repositories**.
 2. Add `https://github.com/EvgenyKrinets/ev-neighbor-charger`; category **Integration**.
-3. Download **EV Neighbor Charger** and restart Home Assistant.
-4. Open **Settings → Devices & services → Add integration → EV Neighbor Charger**.
+3. Download **EV Charger** (older installations may show **EV Neighbor Charger**) and restart Home Assistant.
+4. Open **Settings → Devices & services → Add integration → EV Charger (older versions: EV Neighbor Charger)**.
 5. Select the charger switch, energy and power sensors, tariff, allowed users and shutoff settings.
 6. Open **EV зарядка** in the sidebar.
 
-The charger must be off and the energy sensor numeric before starting a session. Settings can later be changed using **Settings → Devices & services → EV Neighbor Charger → Configure**. No YAML or external shutoff automation is needed.
+The charger must be off and the energy sensor numeric before starting a session. Settings can later be changed using **Settings → Devices & services → EV Charger → Configure**. No YAML or external shutoff automation is needed.
+
+## Administrator integration settings
+
+The panel displays a **⚙ gear** only for Home Assistant administrators. Press it to open the EV Charger integration page in **Settings → Devices & services**; select **Configure** there to edit the charger switch, power and energy sensors, tariff, authorized users, shutdown timer or outgoing email settings. Home Assistant integration configuration is not the same as the user's **@** email profile button. The gear is not shown to neighbors, and the server does not expose the configuration entry ID to non-admins.
+
+Home Assistant versions that classify the integration as a helper may show the existing entry under **Settings → Devices & services → Helpers**. If **Add integration** says *Only one charger can be configured*, the instance already exists; do not delete it merely to find settings.
+
+## External switch control
+
+EV Charger reads the configured switch when the panel opens and subscribes to switch state changes. If the switch is ON but no EV Charger-owned session is active, it shows **In use by another application** (Russian: **Используется другим приложением**) and blocks a second charging start. The external session is **not billed**, and EV Charger will **not switch it off** through its own idle timer. When the switch is OFF, the panel returns to Available unless a scheduled reservation exists.
+
+If the external switch is turned on while there is a **pending scheduled reservation**, the reservation remains recorded but automatic launch is deferred; an error is shown to the authorized owner/admin and the system retries after the switch becomes available. The owner/admin can cancel the reservation. Switch state alone cannot reveal which third-party app started charging; external means simply that no active EV Charger session owns this switch.
 
 ## Automatic shutoff and accounting
 
@@ -84,15 +96,16 @@ Update through HACS, restart Home Assistant and reopen the panel. The panel disp
 ## Краткая инструкция на русском
 
 1. Добавьте репозиторий в **HACS → ⋮ → Пользовательские репозитории**, тип **Интеграция**.
-2. Установите, перезапустите HA и добавьте **EV Neighbor Charger** в **Настройки → Устройства и службы**.
+2. Установите, перезапустите HA и добавьте **EV Charger** в **Настройки → Устройства и службы**.
 3. Выберите выключатель, накопительный счётчик энергии, мощность, цену, пользователей и задержку отключения.
 4. Пользователь запускает зарядку под своим аккаунтом; история и email привязаны к нему.
 5. Кнопка **@** открывает почту пользователя. SMTP и тест отправки находятся в настройках интеграции.
 6. В истории доступны день, неделя, месяц, год и всё время; внизу — сумма времени, энергии и стоимости.
+7. Администратор открывает настройки интеграции через **⚙** на верхней панели (далее **Настроить**). Кнопка **@** предназначена для почты пользователя. При включении станции извне появляется статус **«Используется другим приложением»**; внешний сеанс не отключается и не учитывается в расчётах.
 
 Ограничение пользователей скрывает навигацию и убирает общие права на сущности, но не обеспечивает полную изоляцию всех API Home Assistant.
 
-## Scheduled charging (0.4.16)
+## Scheduled charging (0.4.16 and later)
 
 Choose **Schedule charging**, select a future date/time (shown in the device’s local timezone), and save. The station is immediately reserved and shows the owner and planned start to all allowed users. Only one reservation is supported; occupied stations cannot be reserved. The switch stays off until launch.
 
