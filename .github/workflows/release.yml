@@ -1,4 +1,5 @@
 name: Publish versioned release
+# Keep the release workflow aligned with the validated application commit.
 on:
   push:
     branches: [main]
