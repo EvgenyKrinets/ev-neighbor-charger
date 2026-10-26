@@ -41,7 +41,7 @@ class SubscriptionTests(unittest.TestCase):
         for fn in functions: fn.decorator_list = []
         data = {'active':{'user_id':'neighbor','name':'Neighbor'},'timer':None,'profiles':{},'mail_error':None,
                 'sessions':[{'user_id':'neighbor','energy_kwh':1,'cost':1} for _ in range(150)]+[{'user_id':'other','energy_kwh':2,'cost':2}]}
-        settings = {'power':'power','energy':'energy','users':['neighbor'],'idle':100,'delay':120,'rate':1}
+        settings = {'power':'power','energy':'energy','switch':'switch.charger','users':['neighbor'],'idle':100,'delay':120,'rate':1}
         state = SimpleNamespace(state='0',last_updated=datetime.now(timezone.utc))
         saved=[]
         async def persist(): pass
